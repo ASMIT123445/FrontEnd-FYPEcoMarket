@@ -10,22 +10,35 @@ export default function Register() {
 
   const handleRegister = async (e) => {
     e.preventDefault();
-
-    try {
-      await axios.post("http://127.0.0.1:8000/api/register/", {
-        username,
-        email,
-        password,
-        password2,
-        role,
-      });
-
-      alert("Registered successfully!");
-    } catch (err) {
-      alert("Error registering user");
-    }
-  };
-
+    
+      try {
+        await axios.post("http://127.0.0.1:8000/api/register/", {
+          username,
+          email,
+          password,
+          password2,
+          role,
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+        });
+    
+        alert("Registered successfully!");
+    
+        // Redirect seller to onboarding
+        if (role === "seller") {
+          navigate("/seller/onboarding");
+        } else {
+          navigate("/"); // redirect customer to homepage or wherever
+        }
+      } catch (err) {
+        alert("Error registering user");
+      }
+    };
+    
   return (
     <form onSubmit={handleRegister}>
       <input

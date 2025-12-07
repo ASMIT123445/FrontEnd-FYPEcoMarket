@@ -9,10 +9,19 @@ export default function Login() {
     e.preventDefault();
 
     try {
-      const res = await axios.post("http://127.0.0.1:8000/api/login/", {
-        username,
-        password,
-      });
+      const res = await axios.post(
+        "http://127.0.0.1:8000/api/login/",
+        {
+          username,
+          password,
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+        }
+      );
 
       localStorage.setItem("token", res.data.access_token);
       alert("Login Successful!");
