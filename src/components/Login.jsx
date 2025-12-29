@@ -31,21 +31,27 @@ export default function Login() {
   };
 
   return (
-    <form onSubmit={handleLogin}>
-      <input
-        value={username}
-        onChange={(e) => setUsername(e.target.value)}
-        placeholder="Username"
-      />
+    <div className="login-page">
+      <form onSubmit={handleLogin} className="login-form">
+        <input
+          className="login-input"
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+          placeholder="Username"
+        />
 
-      <input
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-        type="password"
-        placeholder="Password"
-      />
+        <input
+          className="login-input"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          type="password"
+          placeholder="Password"
+        />
 
-      <button type="submit">Login</button>
-    </form>
+        <button type="submit" className="login-button">
+          Login
+        </button>
+      </form>
+    </div>
   );
 }

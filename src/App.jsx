@@ -1,22 +1,23 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import ProductList from "./components/ProductList";
 import Login from "./components/Login";
+import Home from "./components/Home";
 import Register from "./components/Register";
 import ForgetPassword from "./components/ForgetPassword";
 import ResetPassword from "./components/ResetPassword";
-import SellerOnboarding from "./components/SellerOnBoarding"; // new import
+import SellerOnboarding from "./components/SellerOnBoarding";
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Uncomment this if you want a product list home page */}
         {/* <Route path="/" element={<ProductList />} /> */}
-        <Route path="/" element={<Login />} />
+        <Route path="/" element={<Home />} />
+        <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/forget-password" element={<ForgetPassword />} />
         <Route path="/reset-password/:uid/:token" element={<ResetPassword />} />
-        <Route path="/seller/onboarding" element={<SellerOnboarding />} /> {/* new route */}
+        <Route path="/seller/onboarding" element={<SellerOnboarding />} />
       </Routes>
     </BrowserRouter>
   );
