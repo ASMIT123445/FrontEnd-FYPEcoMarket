@@ -483,6 +483,7 @@ export default function AddProduct() {
         </div>
       </div>
 
+
       <style jsx>{`
         .add-product-page {
           background-color: #F9F7F3;
