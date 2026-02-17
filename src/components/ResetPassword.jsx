@@ -12,6 +12,8 @@ import {
   FaArrowLeft
 } from "react-icons/fa";
 
+
+
 export default function ResetPassword() {
   const { uid, token } = useParams();
   const navigate = useNavigate();
