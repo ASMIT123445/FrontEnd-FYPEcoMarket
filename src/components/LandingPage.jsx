@@ -159,7 +159,6 @@ export default function LandingPage() {
       </section>
 
     
-
       {/* CTA */}
       <section className="cta">
         <div className="container">

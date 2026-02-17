@@ -481,6 +481,7 @@ const ShoppingCart = () => {
               </ul>
             </div>
             
+            
             <div className="footer-column">
               <h3>Contact Us</h3>
               <ul className="footer-links">
