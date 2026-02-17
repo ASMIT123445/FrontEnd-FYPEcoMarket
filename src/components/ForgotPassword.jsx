@@ -1,10 +1,8 @@
-import { useState, useEffect } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
+import { useState } from "react";
+import { Link } from "react-router-dom";
 import axios from "axios";
 import { 
-  FaLock, 
-  FaEye, 
-  FaEyeSlash, 
+  FaEnvelope, 
   FaSpinner,
   FaCheckCircle,
   FaExclamationCircle,
@@ -12,49 +10,14 @@ import {
   FaArrowLeft
 } from "react-icons/fa";
 
-export default function ResetPassword() {
-  const { uid, token } = useParams();
-  const navigate = useNavigate();
-  
-  const [formData, setFormData] = useState({
-    password: "",
-    password2: ""
-  });
-  const [showPassword, setShowPassword] = useState(false);
-  const [showPassword2, setShowPassword2] = useState(false);
+export default function ForgotPassword() {
+  const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ type: "", text: "" });
-  const [resetSuccess, setResetSuccess] = useState(false);
-  const [errors, setErrors] = useState({});
+  const [emailSent, setEmailSent] = useState(false);
 
-  useEffect(() => {
-    // Validate that we have uid and token
-    if (!uid || !token) {
-      setMessage({
-        type: "error",
-        text: "Invalid reset link. Please request a new password reset."
-      });
-    }
-  }, [uid, token]);
-
-  const validatePassword = (password) => {
-    return password.length >= 4;
-  };
-
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-
-    // Real-time validation
-    if (name === 'password' && validatePassword(value)) {
-      setErrors(prev => ({ ...prev, password: "" }));
-    }
-    if (name === 'password2' && value === formData.password) {
-      setErrors(prev => ({ ...prev, password2: "" }));
-    }
+  const validateEmail = (email) => {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   };
 
   const handleSubmit = async (e) => {
@@ -62,33 +25,19 @@ export default function ResetPassword() {
     
     // Reset messages
     setMessage({ type: "", text: "" });
-    setErrors({});
 
-    const { password, password2 } = formData;
-    let newErrors = {};
-
-    // Validation
-    if (!password) {
-      newErrors.password = "Password is required";
-    } else if (!validatePassword(password)) {
-      newErrors.password = "Password must be at least 4 characters";
-    }
-
-    if (!password2) {
-      newErrors.password2 = "Please confirm your password";
-    } else if (password !== password2) {
-      newErrors.password2 = "Passwords do not match";
-    }
-
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
+    if (!email) {
+      setMessage({ 
+        type: "error", 
+        text: "Email is required" 
+      });
       return;
     }
 
-    if (!uid || !token) {
-      setMessage({
-        type: "error",
-        text: "Invalid reset link. Please request a new password reset."
+    if (!validateEmail(email)) {
+      setMessage({ 
+        type: "error", 
+        text: "Please enter a valid email address" 
       });
       return;
     }
@@ -96,11 +45,8 @@ export default function ResetPassword() {
     setLoading(true);
 
     try {
-      const response = await axios.post("http://127.0.0.1:8000/api/auth/reset-password/", {
-        uid: uid,
-        token: token,
-        password: password,
-        password2: password2
+      const response = await axios.post("http://127.0.0.1:8000/api/auth/forgot-password/", {
+        email: email
       }, {
         headers: {
           "Content-Type": "application/json",
@@ -109,22 +55,17 @@ export default function ResetPassword() {
       });
 
       if (response.status === 200) {
-        setResetSuccess(true);
+        setEmailSent(true);
         setMessage({ 
           type: "success", 
-          text: "Password reset successful! You can now login with your new password." 
+          text: "Password reset link has been sent to your email!" 
         });
-        
-        // Redirect to login after 3 seconds
-        setTimeout(() => {
-          navigate("/login");
-        }, 3000);
       }
 
     } catch (err) {
-      console.error("Reset password error:", err);
+      console.error("Forgot password error:", err);
       
-      let errorMessage = "Failed to reset password. Please try again.";
+      let errorMessage = "Failed to send reset email. Please try again.";
       
       if (err.response?.data) {
         if (err.response.data.error) {
@@ -146,12 +87,12 @@ export default function ResetPassword() {
   };
 
   return (
-    <div className="reset-password-page">
-      <div className="reset-password-container">
-        <div className="reset-password-content">
-          <div className="reset-password-header">
-            <h2>Reset Your Password</h2>
-            <p>Enter your new password below</p>
+    <div className="forgot-password-page">
+      <div className="forgot-password-container">
+        <div className="forgot-password-content">
+          <div className="forgot-password-header">
+            <h2>Forgot Password?</h2>
+            <p>Enter your email address and we'll send you a link to reset your password</p>
           </div>
 
           {/* Success/Error Messages */}
@@ -167,86 +108,55 @@ export default function ResetPassword() {
             </div>
           )}
 
-          {!resetSuccess ? (
-            <form className="reset-password-form" onSubmit={handleSubmit}>
-              {/* New Password Field */}
+          {!emailSent ? (
+            <form className="forgot-password-form" onSubmit={handleSubmit}>
               <div className="form-group">
-                <label htmlFor="password">New Password</label>
+                <label htmlFor="email">Email Address</label>
                 <div className="input-with-icon">
-                  <FaLock className="input-icon" />
+                  <FaEnvelope className="input-icon" />
                   <input
-                    type={showPassword ? "text" : "password"}
-                    id="password"
-                    name="password"
-                    className={`form-control ${errors.password ? 'error' : ''}`}
-                    placeholder="Enter new password"
-                    value={formData.password}
-                    onChange={handleInputChange}
+                    type="email"
+                    id="email"
+                    name="email"
+                    className="form-control"
+                    placeholder="Enter your email address"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
                     required
                   />
-                  <button
-                    type="button"
-                    className="password-toggle"
-                    onClick={() => setShowPassword(!showPassword)}
-                  >
-                    {showPassword ? <FaEyeSlash /> : <FaEye />}
-                  </button>
                 </div>
-                {errors.password && (
-                  <div className="error-message">{errors.password}</div>
-                )}
-              </div>
-
-              {/* Confirm Password Field */}
-              <div className="form-group">
-                <label htmlFor="password2">Confirm New Password</label>
-                <div className="input-with-icon">
-                  <FaLock className="input-icon" />
-                  <input
-                    type={showPassword2 ? "text" : "password"}
-                    id="password2"
-                    name="password2"
-                    className={`form-control ${errors.password2 ? 'error' : ''}`}
-                    placeholder="Confirm new password"
-                    value={formData.password2}
-                    onChange={handleInputChange}
-                    required
-                  />
-                  <button
-                    type="button"
-                    className="password-toggle"
-                    onClick={() => setShowPassword2(!showPassword2)}
-                  >
-                    {showPassword2 ? <FaEyeSlash /> : <FaEye />}
-                  </button>
-                </div>
-                {errors.password2 && (
-                  <div className="error-message">{errors.password2}</div>
-                )}
               </div>
 
               <button 
                 type="submit" 
                 className={`btn-submit ${loading ? 'loading' : ''}`}
-                disabled={loading || !uid || !token}
+                disabled={loading}
               >
-                {loading ? <FaSpinner className="spinning" /> : <FaLock />}
-                <span>{loading ? "Resetting..." : "Reset Password"}</span>
+                {loading ? <FaSpinner className="spinning" /> : <FaEnvelope />}
+                <span>{loading ? "Sending..." : "Send Reset Link"}</span>
               </button>
             </form>
           ) : (
-            <div className="success-message">
+            <div className="email-sent-message">
               <div className="success-icon">
                 <FaCheckCircle />
               </div>
-              <h3>Password Reset Complete!</h3>
-              <p>Your password has been successfully reset.</p>
-              <p className="redirect-text">
-                Redirecting to login page in 3 seconds...
+              <h3>Check Your Email</h3>
+              <p>We've sent a password reset link to:</p>
+              <p className="email-display">{email}</p>
+              <p className="help-text">
+                Click the link in the email to reset your password. 
+                If you don't see it, check your spam folder.
               </p>
-              <Link to="/login" className="btn-login">
-                Go to Login Now
-              </Link>
+              <button 
+                className="btn-resend"
+                onClick={() => {
+                  setEmailSent(false);
+                  setMessage({ type: "", text: "" });
+                }}
+              >
+                Send Another Email
+              </button>
             </div>
           )}
 
@@ -260,16 +170,16 @@ export default function ResetPassword() {
 
           {/* Info */}
           <div className="demo-info">
-            <h4><FaInfoCircle /> Password Requirements</h4>
-            <p>• Minimum 4 characters long</p>
-            <p>• Both password fields must match</p>
-            <p>• Reset links expire after 1 hour</p>
+            <h4><FaInfoCircle /> Reset Password Info</h4>
+            <p>• Reset links expire after 1 hour for security</p>
+            <p>• Check your spam folder if you don't see the email</p>
+            <p>• Contact support if you continue having issues</p>
           </div>
         </div>
       </div>
 
       <style jsx>{`
-        .reset-password-page {
+        .forgot-password-page {
           background-color: #F9F7F3;
           min-height: 100vh;
           display: flex;
@@ -283,7 +193,7 @@ export default function ResetPassword() {
           background-color: rgba(249, 247, 243, 0.9);
         }
 
-        .reset-password-container {
+        .forgot-password-container {
           width: 100%;
           max-width: 500px;
           border-radius: 25px;
@@ -291,7 +201,7 @@ export default function ResetPassword() {
           box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
         }
 
-        .reset-password-content {
+        .forgot-password-content {
           background-color: white;
           padding: 50px 40px;
           display: flex;
@@ -299,29 +209,30 @@ export default function ResetPassword() {
           justify-content: center;
         }
 
-        .reset-password-header {
+        .forgot-password-header {
           text-align: center;
           margin-bottom: 30px;
         }
 
-        .reset-password-header h2 {
+        .forgot-password-header h2 {
           font-size: 2.2rem;
           color: #1B5E20;
           margin-bottom: 10px;
         }
 
-        .reset-password-header p {
+        .forgot-password-header p {
           color: #666666;
           font-size: 1.1rem;
+          line-height: 1.5;
         }
 
-        .reset-password-form {
+        .forgot-password-form {
           width: 100%;
           margin-bottom: 25px;
         }
 
         .form-group {
-          margin-bottom: 20px;
+          margin-bottom: 25px;
         }
 
         .form-group label {
@@ -362,28 +273,6 @@ export default function ResetPassword() {
           box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
         }
 
-        .form-control.error {
-          border-color: #f44336;
-        }
-
-        .password-toggle {
-          position: absolute;
-          right: 15px;
-          top: 50%;
-          transform: translateY(-50%);
-          background: none;
-          border: none;
-          color: #666666;
-          cursor: pointer;
-          font-size: 16px;
-        }
-
-        .error-message {
-          color: #f44336;
-          font-size: 0.85rem;
-          margin-top: 5px;
-        }
-
         .btn-submit {
           width: 100%;
           padding: 16px;
@@ -399,7 +288,6 @@ export default function ResetPassword() {
           align-items: center;
           justify-content: center;
           gap: 10px;
-          margin-top: 25px;
         }
 
         .btn-submit:hover:not(:disabled) {
@@ -422,7 +310,7 @@ export default function ResetPassword() {
           100% { transform: rotate(360deg); }
         }
 
-        .success-message {
+        .email-sent-message {
           text-align: center;
           padding: 20px 0;
         }
@@ -433,38 +321,46 @@ export default function ResetPassword() {
           margin-bottom: 20px;
         }
 
-        .success-message h3 {
+        .email-sent-message h3 {
           font-size: 1.5rem;
           color: #1B5E20;
           margin-bottom: 15px;
         }
 
-        .success-message p {
+        .email-sent-message p {
           color: #666666;
           margin-bottom: 10px;
           line-height: 1.5;
         }
 
-        .redirect-text {
-          font-size: 0.9rem;
-          color: #888;
-          margin-bottom: 20px;
+        .email-display {
+          font-weight: 600;
+          color: #2E7D32;
+          background-color: rgba(76, 175, 80, 0.1);
+          padding: 10px;
+          border-radius: 8px;
+          margin: 15px 0;
         }
 
-        .btn-login {
-          display: inline-block;
-          background-color: #2E7D32;
-          color: white;
+        .help-text {
+          font-size: 0.9rem;
+          margin-bottom: 25px;
+        }
+
+        .btn-resend {
+          background-color: transparent;
+          color: #2E7D32;
+          border: 2px solid #2E7D32;
           padding: 12px 24px;
           border-radius: 10px;
-          text-decoration: none;
           font-weight: 600;
+          cursor: pointer;
           transition: all 0.3s;
         }
 
-        .btn-login:hover {
-          background-color: #1B5E20;
-          transform: translateY(-2px);
+        .btn-resend:hover {
+          background-color: #2E7D32;
+          color: white;
         }
 
         .back-to-login {
@@ -532,15 +428,15 @@ export default function ResetPassword() {
         }
 
         @media (max-width: 768px) {
-          .reset-password-page {
+          .forgot-password-page {
             padding: 10px;
           }
           
-          .reset-password-content {
+          .forgot-password-content {
             padding: 30px 20px;
           }
           
-          .reset-password-header h2 {
+          .forgot-password-header h2 {
             font-size: 1.8rem;
           }
         }

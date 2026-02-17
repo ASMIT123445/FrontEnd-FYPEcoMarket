@@ -1,0 +1,219 @@
+/* Header.css */
+:root {
+  --primary-green: #2E7D32;
+  --light-green: #4CAF50;
+  --dark-green: #1B5E20;
+  --text-dark: #333333;
+  --text-light: #666666;
+  --white: #FFFFFF;
+  --shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+  --border: #e0e0e0;
+}
+
+.container {
+  width: 90%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 15px;
+}
+
+.app-header {
+  background-color: var(--white);
+  box-shadow: var(--shadow);
+  padding: 15px 0;
+  margin-bottom: 30px;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+}
+
+.header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+}
+
+.logo svg {
+  color: var(--primary-green);
+  font-size: 24px;
+}
+
+.logo-text {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--primary-green);
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+}
+
+.nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.nav-icon {
+  position: relative;
+  cursor: pointer;
+  color: var(--text-dark);
+  transition: color 0.3s;
+  padding: 8px;
+  border-radius: 50%;
+}
+
+.nav-icon:hover {
+  background-color: rgba(46, 125, 50, 0.1);
+}
+
+.nav-icon svg {
+  font-size: 22px;
+}
+
+.badge {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  background-color: var(--primary-green);
+  color: white;
+  border-radius: 50%;
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: bold;
+}
+
+.user-menu-container {
+  position: relative;
+}
+
+.user-menu {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  padding: 8px 12px;
+  border-radius: 8px;
+  transition: background-color 0.3s;
+}
+
+.user-menu:hover {
+  background-color: rgba(46, 125, 50, 0.1);
+}
+
+.user-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background-color: var(--light-green);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: bold;
+  font-size: 14px;
+}
+
+.user-name {
+  font-weight: 600;
+  color: var(--text-dark);
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dropdown-arrow {
+  color: var(--text-light);
+  font-size: 12px;
+  transition: transform 0.3s;
+}
+
+.dropdown-arrow.rotated {
+  transform: rotate(180deg);
+}
+
+.user-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background-color: var(--white);
+  border-radius: 8px;
+  /* box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15); */
+  padding: 8px 0;
+  min-width: 180px;
+  z-index: 1001;
+  margin-top: 5px;
+}
+
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  color: var(--text-dark);
+  font-weight: 500;
+}
+
+.dropdown-item:hover {
+  background-color: rgba(46, 125, 50, 0.1);
+}
+
+.dropdown-item svg {
+  font-size: 16px;
+  color: var(--text-light);
+}
+
+.dropdown-divider {
+  height: 1px;
+  background-color: var(--border);
+  margin: 8px 0;
+}
+
+.logout-item {
+  color: #f44336;
+}
+
+.logout-item:hover {
+  background-color: rgba(244, 67, 54, 0.1);
+}
+
+.logout-item svg {
+  color: #f44336;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .user-name {
+    display: none;
+  }
+  
+  .nav-actions {
+    gap: 15px;
+  }
+}
+
+@media (max-width: 480px) {
+  .logo-text {
+    font-size: 20px;
+  }
+}
