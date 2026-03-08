@@ -57,6 +57,18 @@ const Payment = () => {
   
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [errors, setErrors] = useState({});
+  const [showMessage, setShowMessage] = useState('');
+  
+  // Green Points states
+  const [greenPoints, setGreenPoints] = useState(0);
+  const [pointsToRedeem, setPointsToRedeem] = useState('');
+  const [pointsDiscount, setPointsDiscount] = useState(0);
+
+  // Display message helper
+  const displayMessage = (message) => {
+    setShowMessage(message);
+    setTimeout(() => setShowMessage(''), 3000);
+  };
 
   // Initialize component
   useEffect(() => {
@@ -90,6 +102,19 @@ const Payment = () => {
           // Load cart data
           const cartData = await cartService.getCart();
           setCartItems(cartData.items || []);
+          
+          // Fetch green points
+          const pointsResponse = await fetch('http://127.0.0.1:8000/api/auth/green-points/', {
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('access')}`,
+              'Content-Type': 'application/json'
+            }
+          });
+          
+          if (pointsResponse.ok) {
+            const pointsData = await pointsResponse.json();
+            setGreenPoints(pointsData.balance || 0);
+          }
         } catch (error) {
           console.error('Error loading payment data:', error);
         }
@@ -111,11 +136,54 @@ const Payment = () => {
       totalItems += item.quantity;
     });
     
-    const shipping = subtotal > 4150 ? 0 : 500; // Free shipping over Rs 4150
+    const shipping = 75; // Rs 75 flat shipping per order
     const tax = subtotal * 0.13; // 13% VAT in Nepal
-    const total = subtotal + shipping + tax;
+    const total = subtotal + shipping + tax - pointsDiscount;
     
     return { subtotal, totalItems, shipping, tax, total };
+  };
+
+  // Handle green points redemption
+  const handlePointsChange = (e) => {
+    const value = e.target.value;
+    if (value === '' || /^\d+$/.test(value)) {
+      setPointsToRedeem(value);
+      
+      if (value === '') {
+        setPointsDiscount(0);
+        return;
+      }
+      
+      const points = parseInt(value);
+      
+      // Validate points
+      if (points > greenPoints) {
+        setErrors(prev => ({ ...prev, points: `You only have ${greenPoints} points` }));
+        setPointsDiscount(0);
+        return;
+      }
+      
+      if (points < 50 && points > 0) {
+        setErrors(prev => ({ ...prev, points: 'Minimum 50 points required' }));
+        setPointsDiscount(0);
+        return;
+      }
+      
+      // Calculate discount (10 points = Rs 1)
+      const discount = points / 10;
+      const { subtotal, shipping, tax } = calculateTotals();
+      const orderTotal = subtotal + shipping + tax;
+      const maxDiscount = orderTotal * 0.5; // 50% max discount
+      
+      if (discount > maxDiscount) {
+        setErrors(prev => ({ ...prev, points: `Maximum discount is 50% (${Math.floor(maxDiscount * 10)} points)` }));
+        setPointsDiscount(0);
+        return;
+      }
+      
+      setErrors(prev => ({ ...prev, points: '' }));
+      setPointsDiscount(discount);
+    }
   };
 
   // Handle input changes
@@ -225,12 +293,17 @@ const Payment = () => {
     
     try {
       // Create order through API
+      const orderData = {
+        points_to_redeem: pointsToRedeem ? parseInt(pointsToRedeem) : 0
+      };
+      
       const response = await fetch('http://127.0.0.1:8000/api/orders/create/', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('access')}`,
           'Content-Type': 'application/json'
-        }
+        },
+        body: JSON.stringify(orderData)
       });
 
       if (response.ok) {
@@ -260,7 +333,8 @@ const Payment = () => {
       // Prepare order data
       const orderData = {
         shipping_address: `${shippingData.address}, ${shippingData.city}, ${shippingData.zipCode}`,
-        phone_number: shippingData.phone
+        phone_number: shippingData.phone,
+        points_to_redeem: pointsToRedeem ? parseInt(pointsToRedeem) : 0
       };
       
       // Initiate eSewa payment
@@ -289,7 +363,8 @@ const Payment = () => {
       // Prepare order data
       const orderData = {
         shipping_address: `${shippingData.address}, ${shippingData.city}, ${shippingData.zipCode}`,
-        phone_number: shippingData.phone
+        phone_number: shippingData.phone,
+        points_to_redeem: pointsToRedeem ? parseInt(pointsToRedeem) : 0
       };
       
       // Create COD order
@@ -353,6 +428,24 @@ const Payment = () => {
     <div className="payment-page">
       {/* Header */}
       <Header cartCount={totalItems} />
+
+      {/* Message Display */}
+      {showMessage && (
+        <div style={{
+          position: 'fixed',
+          top: '100px',
+          right: '20px',
+          background: '#2E7D32',
+          color: 'white',
+          padding: '15px 25px',
+          borderRadius: '8px',
+          boxShadow: '0 4px 15px rgba(0,0,0,0.2)',
+          zIndex: 9999,
+          animation: 'slideIn 0.3s ease-out'
+        }}>
+          {showMessage}
+        </div>
+      )}
 
       {/* Checkout Steps */}
       <div className="checkout-steps">
@@ -671,15 +764,55 @@ const Payment = () => {
                 </div>
                 <div className="total-row">
                   <span>Shipping</span>
-                  <span>{shipping === 0 ? 'FREE' : `Rs ${Math.round(shipping)}`}</span>
+                  <span>Rs {Math.round(shipping)}</span>
                 </div>
                 <div className="total-row">
                   <span>Estimated Tax (VAT)</span>
                   <span>Rs {Math.round(tax)}</span>
                 </div>
+                {pointsDiscount > 0 && (
+                  <div className="total-row discount">
+                    <span>Green Points Discount</span>
+                    <span>- Rs {Math.round(pointsDiscount)}</span>
+                  </div>
+                )}
                 <div className="total-row total">
                   <span>Total</span>
                   <span>Rs {Math.round(total)}</span>
+                </div>
+              </div>
+              
+              {/* Green Points Redemption */}
+              <div className="green-points-redemption">
+                <h4>🌿 Use Green Points</h4>
+                <div className="points-balance-info">
+                  <span>Available:</span>
+                  <span className="points-value">{greenPoints} points</span>
+                </div>
+                <div className="points-input-group">
+                  <input
+                    type="text"
+                    placeholder="Enter points"
+                    value={pointsToRedeem}
+                    onChange={handlePointsChange}
+                    className={`points-input ${errors.points ? 'error' : ''}`}
+                  />
+                  <button 
+                    className="btn-apply-points"
+                    onClick={() => {
+                      if (pointsToRedeem && !errors.points) {
+                        displayMessage(`Applied ${pointsToRedeem} points!`);
+                      }
+                    }}
+                    disabled={!pointsToRedeem || errors.points}
+                  >
+                    Apply
+                  </button>
+                </div>
+                {errors.points && <div className="error-message show">{errors.points}</div>}
+                <div className="points-info-text">
+                  <p>• 10 points = Rs 1 off</p>
+                  <p>• Min 50 points, Max 50% discount</p>
                 </div>
               </div>
               
@@ -1218,6 +1351,96 @@ const Payment = () => {
         .eco-impact p {
           color: #666666;
           font-size: 0.9rem;
+        }
+
+        /* Green Points Redemption */
+        .green-points-redemption {
+          background: #f5f5f5;
+          border-radius: 10px;
+          padding: 20px;
+          margin: 20px 0;
+          border: 2px solid #2E7D32;
+        }
+
+        .green-points-redemption h4 {
+          color: #1B5E20;
+          margin: 0 0 15px 0;
+          font-size: 1.1rem;
+        }
+
+        .points-balance-info {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 10px 15px;
+          background: white;
+          border-radius: 5px;
+          margin-bottom: 15px;
+          font-size: 0.95rem;
+          border: 1px solid #ddd;
+        }
+
+        .points-value {
+          font-weight: 700;
+          color: #2E7D32;
+          font-size: 1rem;
+        }
+
+        .points-input-group {
+          display: flex;
+          gap: 10px;
+          margin-bottom: 10px;
+        }
+
+        .points-input {
+          flex: 1;
+          padding: 10px 15px;
+          border: 2px solid #ddd;
+          border-radius: 5px;
+          font-size: 1rem;
+        }
+
+        .points-input:focus {
+          outline: none;
+          border-color: #2E7D32;
+        }
+
+        .points-input.error {
+          border-color: #f44336;
+        }
+
+        .btn-apply-points {
+          padding: 10px 20px;
+          background-color: #2E7D32;
+          color: white;
+          border: none;
+          border-radius: 5px;
+          font-weight: 600;
+          cursor: pointer;
+        }
+
+        .btn-apply-points:hover:not(:disabled) {
+          background-color: #1B5E20;
+        }
+
+        .btn-apply-points:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
+
+        .points-info-text {
+          margin-top: 10px;
+        }
+
+        .points-info-text p {
+          margin: 5px 0;
+          font-size: 0.85rem;
+          color: #666;
+        }
+
+        .total-row.discount {
+          color: #2E7D32;
+          font-weight: 600;
         }
 
         .terms-checkbox {

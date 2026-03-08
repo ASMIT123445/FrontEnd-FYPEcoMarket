@@ -18,6 +18,7 @@ import OrderConfirmation from "./components/OrderConfirmation";
 import Profile from "./components/Profile";
 import ViewAll from "./components/ViewAll";
 import Wishlist from "./components/Wishlist";
+import SellerDashboard from "./components/SellerDashboard";
 
 function App() {
   return (
@@ -91,6 +92,12 @@ function App() {
         <Route path="/seller/onboarding" element={
           <ProtectedRoute>
             <SellerOnboarding />
+          </ProtectedRoute>
+        } />
+
+        <Route path="/seller-dashboard" element={
+          <ProtectedRoute>
+            <SellerDashboard />
           </ProtectedRoute>
         } />
 

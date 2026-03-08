@@ -210,6 +210,16 @@ const OrderConfirmation = () => {
                                     Rs {Math.round(order.total_amount)}
                                 </span>
                             </div>
+                            {order.points_redeemed > 0 && (
+                                <div className="points-redeemed-info">
+                                    <span>🎉 Used {order.points_redeemed} points (Rs {Math.round(order.points_discount)} off)</span>
+                                </div>
+                            )}
+                            {order.points_earned > 0 && (
+                                <div className="points-earned-info">
+                                    <span>🌿 Earned {order.points_earned} Green Points!</span>
+                                </div>
+                            )}
                         </div>
 
                         {/* Eco Impact */}

@@ -25,11 +25,13 @@ export default function AddProduct() {
     price: "",
     stock: "",
     eco_category: "", // Use eco_category instead of category
+    product_category: "", // New product category field
     image: null,
     rating: 0
   });
 
   const [ecoCategories, setEcoCategories] = useState([]);
+  const [productCategories, setProductCategories] = useState([]);
 
   // Fetch eco categories on component mount
   useEffect(() => {
@@ -83,7 +85,24 @@ export default function AddProduct() {
       }
     };
 
+    const fetchProductCategories = async () => {
+      try {
+        const response = await axiosInstance.get('/products/product-categories/');
+        setProductCategories(response.data);
+        // Set default product category to first available
+        if (response.data.length > 0) {
+          setFormData(prev => ({
+            ...prev,
+            product_category: response.data[0].id
+          }));
+        }
+      } catch (error) {
+        console.error('Error fetching product categories:', error);
+      }
+    };
+
     fetchEcoCategories();
+    fetchProductCategories();
   }, []);
 
   // Load product data if in edit mode
@@ -101,6 +120,7 @@ export default function AddProduct() {
             price: product.price,
             stock: product.stock,
             eco_category: product.eco_category || '',
+            product_category: product.product_category || '',
             image: null, // Don't load existing image, user can keep it or change it
             rating: product.rating || 0
           });
@@ -203,6 +223,7 @@ export default function AddProduct() {
       productData.append('price', parseFloat(formData.price));
       productData.append('stock', parseInt(formData.stock));
       productData.append('eco_category', formData.eco_category);
+      productData.append('product_category', formData.product_category);
       
       // Only append image if a new one is selected
       if (formData.image) {
@@ -253,6 +274,7 @@ export default function AddProduct() {
             price: "",
             stock: "",
             eco_category: ecoCategories.length > 0 ? ecoCategories[0].id : "",
+            product_category: productCategories.length > 0 ? productCategories[0].id : "",
             image: null,
             rating: 0
           });
@@ -362,7 +384,7 @@ export default function AddProduct() {
             </div>
 
             <div className="form-group">
-              <label htmlFor="eco_category">Category *</label>
+              <label htmlFor="eco_category">Eco Category *</label>
               <select
                 id="eco_category"
                 name="eco_category"
@@ -375,6 +397,28 @@ export default function AddProduct() {
                   <option value="">Loading categories...</option>
                 ) : (
                   ecoCategories.map((cat) => (
+                    <option key={cat.id} value={cat.id}>
+                      {cat.name}
+                    </option>
+                  ))
+                )}
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="product_category">Product Category *</label>
+              <select
+                id="product_category"
+                name="product_category"
+                className="form-control"
+                value={formData.product_category}
+                onChange={handleInputChange}
+                required
+              >
+                {productCategories.length === 0 ? (
+                  <option value="">Loading categories...</option>
+                ) : (
+                  productCategories.map((cat) => (
                     <option key={cat.id} value={cat.id}>
                       {cat.name}
                     </option>

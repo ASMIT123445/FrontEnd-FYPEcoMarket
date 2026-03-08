@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { FaArrowLeft, FaHome, FaChevronRight, FaHeart, FaChevronLeft } from 'react-icons/fa';
 import axiosInstance from '../services/axiosInstance';
@@ -20,6 +20,17 @@ const ProductDetail = () => {
   const [activeImage, setActiveImage] = useState(0);
   const [cartCount, setCartCount] = useState(0);
   const [showMessage, setShowMessage] = useState('');
+  const [userRating, setUserRating] = useState(0);
+  const [hoverRating, setHoverRating] = useState(0);
+  const [hasRated, setHasRated] = useState(false);
+  const [averageRating, setAverageRating] = useState(0);
+  const [ratingCount, setRatingCount] = useState(0);
+  const [reviewText, setReviewText] = useState('');
+  const [userReviews, setUserReviews] = useState([]);
+  const [similarProducts, setSimilarProducts] = useState([]);
+  const similarProductsScrollRef = useRef(null);
+  const [canScrollLeftSimilar, setCanScrollLeftSimilar] = useState(false);
+  const [canScrollRightSimilar, setCanScrollRightSimilar] = useState(true);
 
   // Initialize cart count
   useEffect(() => {
@@ -44,6 +55,15 @@ const ProductDetail = () => {
         const response = await axiosInstance.get(`/products/${id}/`);
         setProduct(response.data);
         setError(null);
+        
+        // Fetch ratings
+        await fetchRatings();
+        
+        // Fetch user's rating if logged in
+        const token = localStorage.getItem('access');
+        if (token) {
+          await fetchUserRating();
+        }
       } catch (err) {
         console.error('Error fetching product:', err);
         setError('Product not found');
@@ -85,17 +105,121 @@ const ProductDetail = () => {
     }
   ];
 
-  // Sample similar products (in real app, fetch from API based on category)
-  const [similarProducts, setSimilarProducts] = useState([]);
+  // Fetch ratings
+  const fetchRatings = async () => {
+    try {
+      const response = await axiosInstance.get(`/products/${id}/ratings/`);
+      setAverageRating(response.data.average_rating);
+      setRatingCount(response.data.rating_count);
+      setUserReviews(response.data.ratings || []);
+    } catch (error) {
+      console.error('Error fetching ratings:', error);
+    }
+  };
+
+  // Fetch user's rating
+  const fetchUserRating = async () => {
+    try {
+      const response = await axiosInstance.get(`/products/${id}/my-rating/`);
+      if (response.data.rating !== null) {
+        setUserRating(response.data.rating);
+        setReviewText(response.data.review || '');
+        setHasRated(true);
+      }
+    } catch (error) {
+      console.error('Error fetching user rating:', error);
+    }
+  };
+
+  // Submit rating
+  const submitRating = async (rating) => {
+    try {
+      const token = localStorage.getItem('access');
+      if (!token) {
+        displayMessage('Please login to rate this product');
+        setTimeout(() => navigate('/login'), 2000);
+        return;
+      }
+
+      await axiosInstance.post(`/products/${id}/ratings/`, {
+        rating: rating,
+        review: reviewText
+      });
+
+      setUserRating(rating);
+      setHasRated(true);
+      displayMessage(hasRated ? 'Rating updated!' : 'Thank you for your rating!');
+      
+      // Refresh ratings
+      await fetchRatings();
+    } catch (error) {
+      console.error('Error submitting rating:', error);
+      displayMessage('Error submitting rating. Please try again.');
+    }
+  };
+
+  // Handle star click
+  const handleStarClick = (rating) => {
+    submitRating(rating);
+  };
+
+  // Handle post review
+  const handlePostReview = () => {
+    if (userRating === 0) {
+      displayMessage('Please select a rating first');
+      return;
+    }
+    submitRating(userRating);
+  };
+
+  // Horizontal scroll functions for similar products
+  const scrollLeftSimilar = () => {
+    if (similarProductsScrollRef.current) {
+      similarProductsScrollRef.current.scrollBy({
+        left: -220,
+        behavior: 'smooth'
+      });
+    }
+  };
+
+  const scrollRightSimilar = () => {
+    if (similarProductsScrollRef.current) {
+      similarProductsScrollRef.current.scrollBy({
+        left: 220,
+        behavior: 'smooth'
+      });
+    }
+  };
+
+  const checkScrollButtonsSimilar = () => {
+    if (similarProductsScrollRef.current) {
+      const {scrollLeft, scrollWidth, clientWidth} = similarProductsScrollRef.current;
+      setCanScrollLeftSimilar(scrollLeft > 0);
+      setCanScrollRightSimilar(scrollLeft < scrollWidth - clientWidth - 1);
+    }
+  };
+
+  // Add scroll event listener for similar products
+  useEffect(() => {
+    const scrollContainer = similarProductsScrollRef.current;
+    if (scrollContainer) {
+      scrollContainer.addEventListener('scroll', checkScrollButtonsSimilar);
+      checkScrollButtonsSimilar();
+
+      return() => {
+        scrollContainer.removeEventListener('scroll', checkScrollButtonsSimilar);
+      };
+    }
+  }, [similarProducts]);
 
   useEffect(() => {
     const fetchSimilarProducts = async () => {
       try {
         const response = await axiosInstance.get('/products/');
-        // Filter out current product and take first 4
+        // Filter out current product and take first 7 for scrollable view
         const filtered = response.data
           .filter(p => p.id !== parseInt(id))
-          .slice(0, 4);
+          .slice(0, 7);
         setSimilarProducts(filtered);
       } catch (err) {
         console.error('Error fetching similar products:', err);
@@ -311,9 +435,11 @@ const ProductDetail = () => {
             
             <div className="rating">
               <div className="stars">
-                {renderStars(product.rating || 4.5)}
+                {renderStars(averageRating || product.rating || 4.5)}
               </div>
-              <span className="rating-text">{product.rating || 4.5} (128 reviews)</span>
+              <span className="rating-text">
+                {averageRating || product.rating || 4.5} ({ratingCount} reviews)
+              </span>
             </div>
             
             <div className="price-section">
@@ -390,36 +516,101 @@ const ProductDetail = () => {
         {/* Reviews Section */}
         <div className="reviews-section">
           <h2 className="section-title">Customer Reviews</h2>
+          
+          {/* Rate the Product Section */}
+          <div className="rate-product-box">
+            <span className="rate-label">Rate the product:</span>
+            <div className="interactive-stars">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <i
+                  key={star}
+                  className={`fas fa-star ${
+                    star <= (hoverRating || userRating) ? 'active' : ''
+                  }`}
+                  onMouseEnter={() => setHoverRating(star)}
+                  onMouseLeave={() => setHoverRating(0)}
+                  onClick={() => handleStarClick(star)}
+                  style={{ cursor: 'pointer' }}
+                ></i>
+              ))}
+              {hasRated && (
+                <span className="your-rating-text">Your rating: {userRating}★</span>
+              )}
+            </div>
+            
+            {/* Review Comment Section */}
+            <div className="review-input-section">
+              <textarea
+                className="review-textarea"
+                placeholder="Share your thoughts about this product... (optional)"
+                value={reviewText}
+                onChange={(e) => setReviewText(e.target.value)}
+                rows="3"
+              />
+              <button 
+                className="post-review-btn"
+                onClick={handlePostReview}
+                disabled={userRating === 0}
+              >
+                <i className="fas fa-paper-plane"></i>
+                {hasRated ? 'Update Review' : 'Post Review'}
+              </button>
+            </div>
+          </div>
+          
           <div className="reviews-container">
-            {reviews.map((review) => (
-              <div key={review.id} className="review">
-                <div className="review-header">
-                  <div className="reviewer">
-                    <div className="reviewer-avatar">{review.avatar}</div>
-                    <div className="reviewer-info">
-                      <h4>{review.name}</h4>
-                      <div className="review-date">{review.date}</div>
+            {userReviews.length > 0 ? (
+              userReviews.map((review) => (
+                <div key={review.id} className="review">
+                  <div className="review-header">
+                    <div className="reviewer">
+                      <div className="reviewer-avatar">{review.user_avatar}</div>
+                      <div className="reviewer-info">
+                        <h4>{review.user_name}</h4>
+                        <div className="review-date">
+                          {new Date(review.created_at).toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric'
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="review-stars">
+                      {renderStars(review.rating)}
                     </div>
                   </div>
-                  <div className="review-stars">
-                    {renderStars(review.rating)}
-                  </div>
+                  {review.review && (
+                    <div className="review-content">
+                      <p>{review.review}</p>
+                    </div>
+                  )}
                 </div>
-                <div className="review-content">
-                  <p>{review.content}</p>
-                </div>
+              ))
+            ) : (
+              <div className="no-reviews">
+                <p>No reviews yet. Be the first to review this product!</p>
               </div>
-            ))}
+            )}
           </div>
         </div>
 
         {/* Similar Products Section */}
         <div className="similar-products">
           <h2 className="section-title">Similar Products</h2>
-          <div className="products-grid">
+          
+          <button 
+            className={`similar-scroll-arrow left ${!canScrollLeftSimilar ? 'disabled' : ''}`}
+            onClick={scrollLeftSimilar}
+            disabled={!canScrollLeftSimilar}
+          >
+            <FaChevronLeft />
+          </button>
+          
+          <div className="products-grid-scroll" ref={similarProductsScrollRef}>
             {similarProducts.map((similarProduct) => (
               <div key={similarProduct.id} className="product-card">
-                <div className="product-card-img">
+                <div className="product-card-img" onClick={() => navigate(`/product/${similarProduct.id}`)}>
                   <img 
                     src={similarProduct.image_url || similarProduct.image} 
                     alt={similarProduct.name}
@@ -429,7 +620,7 @@ const ProductDetail = () => {
                   />
                 </div>
                 <div className="product-card-content">
-                  <h3 className="product-card-title">{similarProduct.name}</h3>
+                  <h3 className="product-card-title" onClick={() => navigate(`/product/${similarProduct.id}`)}>{similarProduct.name}</h3>
                   <div className="product-card-price">
                     <span className="product-card-current">Rs {Math.round(similarProduct.price)}</span>
                     {similarProduct.oldPrice && (
@@ -447,6 +638,14 @@ const ProductDetail = () => {
               </div>
             ))}
           </div>
+          
+          <button 
+            className={`similar-scroll-arrow right ${!canScrollRightSimilar ? 'disabled' : ''}`}
+            onClick={scrollRightSimilar}
+            disabled={!canScrollRightSimilar}
+          >
+            <FaChevronRight />
+          </button>
         </div>
       </div>
 

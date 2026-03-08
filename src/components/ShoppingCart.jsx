@@ -121,7 +121,7 @@ const ShoppingCart = () => {
     
     console.log(`Subtotal: ${subtotal}, Total Items: ${totalItems}`); // Debug log
     
-    const shipping = subtotal > 4150 ? 0 : 100; // Free shipping over Rs 4150 (50 USD)
+    const shipping = 75; // Rs 75 flat shipping per order
     const tax = subtotal * 0.13; // 
     const total = subtotal + shipping + tax;
     const ecoSavings = subtotal * 0.02; // 2% eco savings estimate
@@ -333,7 +333,7 @@ const ShoppingCart = () => {
                   <div className="summary-row">
                     <span className="summary-label">Shipping</span>
                     <span className="summary-value">
-                      {shipping === 0 ? 'FREE' : `Rs ${Math.round(shipping)}`}
+                      Rs {Math.round(shipping)}
                     </span>
                   </div>
                   

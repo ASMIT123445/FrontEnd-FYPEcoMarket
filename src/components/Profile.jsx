@@ -18,6 +18,9 @@ const Profile = () => {
     const [sellerProducts, setSellerProducts] = useState([]);
     const [productsLoading, setProductsLoading] = useState(false);
     const [showMessage, setShowMessage] = useState('');
+    const [greenPoints, setGreenPoints] = useState(0);
+    const [pointsHistory, setPointsHistory] = useState([]);
+    const [showPointsHistory, setShowPointsHistory] = useState(false);
     
     const [formData, setFormData] = useState({
         first_name: '',
@@ -61,6 +64,9 @@ const Profile = () => {
                     if (profileData.role === 'seller') {
                         await fetchSellerProducts();
                     }
+                    
+                    // Fetch green points
+                    await fetchGreenPoints();
                 } else {
                     console.error('Error fetching profile:', response.statusText);
                 }
@@ -83,6 +89,25 @@ const Profile = () => {
             console.error('Error fetching seller products:', error);
         } finally {
             setProductsLoading(false);
+        }
+    };
+
+    const fetchGreenPoints = async () => {
+        try {
+            const response = await axiosInstance.get('/auth/green-points/');
+            setGreenPoints(response.data.balance || 0);
+        } catch (error) {
+            console.error('Error fetching green points:', error);
+        }
+    };
+
+    const fetchPointsHistory = async () => {
+        try {
+            const response = await axiosInstance.get('/auth/green-points/history/');
+            setPointsHistory(response.data || []);
+            setShowPointsHistory(true);
+        } catch (error) {
+            console.error('Error fetching points history:', error);
         }
     };
 
@@ -357,6 +382,72 @@ const Profile = () => {
                             </div>
                         </div>
                     </div>
+
+                    {/* Green Points Section */}
+                    <div className="green-points-section">
+                        <div className="points-card">
+                            <h3>🌿 Green Points</h3>
+                            <div className="points-balance">
+                                <span className="points-number">{greenPoints}</span>
+                                <span className="points-label">Points</span>
+                            </div>
+                            <div className="points-info">
+                                <p>• Earn 1 point for every Rs 10 spent</p>
+                                <p>• 10 points = Rs 1 discount</p>
+                            </div>
+                            <button 
+                                className="btn-view-history"
+                                onClick={fetchPointsHistory}
+                            >
+                                View History
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Points History Modal */}
+                    {showPointsHistory && (
+                        <div className="modal-overlay" onClick={() => setShowPointsHistory(false)}>
+                            <div className="points-history-modal" onClick={(e) => e.stopPropagation()}>
+                                <div className="modal-header">
+                                    <h3>Transaction History</h3>
+                                    <button 
+                                        className="btn-close-modal"
+                                        onClick={() => setShowPointsHistory(false)}
+                                    >
+                                        ✕
+                                    </button>
+                                </div>
+                                <div className="history-list">
+                                    {pointsHistory.length === 0 ? (
+                                        <div className="empty-history">
+                                            <p>No transactions yet</p>
+                                            <p style={{fontSize: '0.9rem', color: '#999'}}>
+                                                Start shopping to earn points!
+                                            </p>
+                                        </div>
+                                    ) : (
+                                        pointsHistory.map(transaction => (
+                                            <div key={transaction.id} className="history-item">
+                                                <div className="transaction-details">
+                                                    <p className="transaction-desc">{transaction.description}</p>
+                                                    <p className="transaction-date">
+                                                        {new Date(transaction.created_at).toLocaleDateString('en-US', {
+                                                            year: 'numeric',
+                                                            month: 'short',
+                                                            day: 'numeric'
+                                                        })}
+                                                    </p>
+                                                </div>
+                                                <div className={`transaction-points ${transaction.transaction_type}`}>
+                                                    {transaction.transaction_type === 'earned' ? '+' : ''}{transaction.points}
+                                                </div>
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    )}
 
                     {/* Seller Products Section */}
                     {user?.role === 'seller' && (

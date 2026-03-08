@@ -38,7 +38,12 @@ import {
     FaUtensils,
     FaCouch,
     FaTools,
-    FaPalette
+    FaPalette,
+    FaBox,
+    FaEdit,
+    FaTrash,
+    FaEye,
+    FaClipboardList
 } from "react-icons/fa";
 import {logout, getUserFromToken} from "../utils/auth";
 import {cartService} from "../services/cartService";
@@ -59,13 +64,21 @@ export default function Products() {
     const [sortBy, setSortBy] = useState("featured");
     const [selectedCategory, setSelectedCategory] = useState("");
     const [selectedEcoCategory, setSelectedEcoCategory] = useState("");
+    const [selectedProductCategory, setSelectedProductCategory] = useState("");
     const [ecoCategories, setEcoCategories] = useState([]);
+    const [productCategories, setProductCategories] = useState([]);
     const [user, setUser] = useState(null);
     const [showUserDropdown, setShowUserDropdown] = useState(false);
     const [userLoading, setUserLoading] = useState(true);
     const [showFilters, setShowFilters] = useState(false);
     const [appliedFilters, setAppliedFilters] = useState({ecoRating: [], stockStatus: [], maxPrice: 2500});
     const [wishlistItems, setWishlistItems] = useState([]);
+    
+    // Seller panel states
+    const [showSellerPanel, setShowSellerPanel] = useState(false);
+    const [sellerTab, setSellerTab] = useState('products'); // 'products' or 'orders'
+    const [sellerProducts, setSellerProducts] = useState([]);
+    const [sellerOrders, setSellerOrders] = useState([]);
 
     // Fetch eco categories on component mount
     useEffect(() => {
@@ -88,39 +101,23 @@ export default function Products() {
             }
         };
 
+        const fetchProductCategories = async () => {
+            try {
+                const response = await axiosInstance.get('/products/product-categories/');
+                setProductCategories(response.data);
+            } catch (error) {
+                console.error('Error fetching product categories:', error);
+            }
+        };
+
         fetchEcoCategories();
+        fetchProductCategories();
     }, []);
 
     // Ref for horizontal scrolling
     const productsScrollRef = useRef(null);
     const [canScrollLeft, setCanScrollLeft] = useState(false);
     const [canScrollRight, setCanScrollRight] = useState(true);
-
-    
-    const categories = [
-        {
-            id: 'all',
-            name: 'All Products',
-            icon: <FaLeaf/>},
-        {
-            id: 'accessories',
-            name: 'Accessories',
-            icon: <FaHeart/>},
-        {
-            id: 'kitchen_items',
-            name: 'Kitchen Items',
-            icon: <FaUtensils/>},
-        {
-            id: 'home_living',
-            name: 'Home & Living',
-            icon: <FaCouch/>}, {
-            id: 'craft_tools',
-            name: 'Craft & Tools',
-            icon: <FaTools/>}, {
-            id: 'art_supplies',
-            name: 'Art Supplies',
-            icon: <FaPalette/>}
-    ];
 
     useEffect(() => {
         const initializeUser = async () => {
@@ -200,6 +197,9 @@ export default function Products() {
                 if (selectedCategory && selectedCategory !== 'all') {
                     params.append('category', selectedCategory);
                 }
+                if (selectedProductCategory) {
+                    params.append('product_category', selectedProductCategory);
+                }
                 if (priceRange < 2500) {
                     params.append('max_price', priceRange);
                 }
@@ -233,7 +233,49 @@ export default function Products() {
         };
 
         fetchProducts();
-    }, [selectedCategory, priceRange]); // Removed 'search' from dependencies
+    }, [selectedCategory, selectedProductCategory, priceRange]); // Added selectedProductCategory
+
+    // Fetch seller products and orders
+    const fetchSellerProducts = async () => {
+        try {
+            const response = await axiosInstance.get('/products/seller/my-products/');
+            setSellerProducts(response.data);
+        } catch (error) {
+            console.error('Error fetching seller products:', error);
+        }
+    };
+
+    const fetchSellerOrders = async () => {
+        try {
+            const response = await axiosInstance.get('/orders/history/');
+            setSellerOrders(response.data);
+        } catch (error) {
+            console.error('Error fetching seller orders:', error);
+        }
+    };
+
+    useEffect(() => {
+        if (user?.role === 'seller' && showSellerPanel) {
+            if (sellerTab === 'products') {
+                fetchSellerProducts();
+            } else if (sellerTab === 'orders') {
+                fetchSellerOrders();
+            }
+        }
+    }, [user, showSellerPanel, sellerTab]);
+
+    const handleDeleteProduct = async (productId, productName) => {
+        if (!window.confirm(`Delete "${productName}"?`)) return;
+        
+        try {
+            await axiosInstance.delete(`/products/${productId}/`);
+            alert('Product deleted successfully!');
+            fetchSellerProducts();
+        } catch (error) {
+            console.error('Error deleting product:', error);
+            alert('Error deleting product');
+        }
+    };
 
     const addToCartHandler = async (product) => {
         try {
@@ -561,6 +603,12 @@ export default function Products() {
                                             <FaUser/>
                                             Profile
                                         </div>
+                                        {user?.role === 'seller' && (
+                                            <div className="dropdown-item" onClick={() => navigate('/seller-dashboard')}>
+                                                <FaBox/>
+                                                Seller Dashboard
+                                            </div>
+                                        )}
                                         <div className="dropdown-item" onClick={() => navigate('/cart')}>
                                             <FaShoppingCart/>
                                             My Orders
@@ -588,30 +636,37 @@ export default function Products() {
             <div className="categories-nav">
                 <div className="home-main-container">
                     <div className="categories-scroll">
-                        {
-                        categories.map((category) => (
-                            <button key={
-                                    category.id
-                                }
-                                className={
-                                    `category-tab ${
-                                        (category.id === 'all' && selectedCategory === '') || selectedCategory === category.id ? 'active' : ''
-                                    }`
-                                }
-                                onClick={
-                                    () => setSelectedCategory(category.id === 'all' ? '' : category.id)
-                            }>
-                                <span className="category-icon">
-                                    {
-                                    category.icon
-                                }</span>
-                                <span className="category-name">
-                                    {
-                                    category.name
-                                }</span>
-                            </button>
-                        ))
-                    } </div>
+                        <button 
+                            className={`category-tab ${selectedProductCategory === '' ? 'active' : ''}`}
+                            onClick={() => setSelectedProductCategory('')}
+                        >
+                            <span className="category-icon"><FaLeaf/></span>
+                            <span className="category-name">All Products</span>
+                        </button>
+                        {productCategories.map((category) => {
+                            // Map icons based on category slug
+                            const iconMap = {
+                                'accessories': <FaHeart/>,
+                                'kitchen_items': <FaUtensils/>,
+                                'home_living': <FaCouch/>,
+                                'craft_tools': <FaTools/>,
+                                'art_supplies': <FaPalette/>
+                            };
+                            
+                            return (
+                                <button 
+                                    key={category.id}
+                                    className={`category-tab ${selectedProductCategory === category.slug ? 'active' : ''}`}
+                                    onClick={() => setSelectedProductCategory(category.slug)}
+                                >
+                                    <span className="category-icon">
+                                        {iconMap[category.slug] || <FaLeaf/>}
+                                    </span>
+                                    <span className="category-name">{category.name}</span>
+                                </button>
+                            );
+                        })}
+                    </div>
                 </div>
             </div>
 
