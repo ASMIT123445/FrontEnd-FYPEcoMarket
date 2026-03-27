@@ -518,6 +518,8 @@ const ProductDetail = () => {
         {/* Reviews Section */}
         <div className="reviews-section">
           <h2 className="section-title">Customer Reviews</h2>
+
+          
           
           {/* Rate the Product Section */}
           <div className="rate-product-box">
