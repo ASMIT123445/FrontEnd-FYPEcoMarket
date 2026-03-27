@@ -271,19 +271,28 @@
 
 .features {
   list-style: none;
-  margin-bottom: 30px;
+  margin-bottom: 24px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
 }
 
 .features li {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-bottom: 10px;
-  color: var(--text-dark);
+  background: #f1f8f1;
+  border: 1px solid #c8e6c9;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 0.85rem;
+  color: #2E7D32;
+  font-weight: 500;
 }
 
-.features i {
-  color: var(--primary-green);
+.features li svg {
+  flex-shrink: 0;
+  font-size: 1rem;
 }
 
 /* Add to Cart Section */

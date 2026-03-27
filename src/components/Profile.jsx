@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
     FaUser, FaEdit, FaSave, FaTimes, FaEnvelope, FaUserTag, 
-    FaBox, FaPlus, FaEye, FaTrash, FaHome, FaChevronRight 
+    FaHome, FaChevronRight 
 } from 'react-icons/fa';
 import Header from './Header';
 import { getUserFromToken } from '../utils/auth';
@@ -15,8 +15,6 @@ const Profile = () => {
     const [loading, setLoading] = useState(true);
     const [editing, setEditing] = useState(false);
     const [saving, setSaving] = useState(false);
-    const [sellerProducts, setSellerProducts] = useState([]);
-    const [productsLoading, setProductsLoading] = useState(false);
     const [showMessage, setShowMessage] = useState('');
     const [greenPoints, setGreenPoints] = useState(0);
     const [pointsHistory, setPointsHistory] = useState([]);
@@ -59,11 +57,6 @@ const Profile = () => {
                         role: profileData.role || 'customer',
                         address: profileData.address || ''
                     });
-
-                    // If user is a seller, fetch their products
-                    if (profileData.role === 'seller') {
-                        await fetchSellerProducts();
-                    }
                     
                     // Fetch green points
                     await fetchGreenPoints();
@@ -79,18 +72,6 @@ const Profile = () => {
 
         initializeProfile();
     }, [navigate]);
-
-    const fetchSellerProducts = async () => {
-        setProductsLoading(true);
-        try {
-            const response = await axiosInstance.get('/products/seller/my-products/');
-            setSellerProducts(response.data);
-        } catch (error) {
-            console.error('Error fetching seller products:', error);
-        } finally {
-            setProductsLoading(false);
-        }
-    };
 
     const fetchGreenPoints = async () => {
         try {
@@ -136,11 +117,6 @@ const Profile = () => {
                 setUser(data.profile);
                 setEditing(false);
                 displayMessage('Profile updated successfully!');
-                
-                // If role changed to seller, fetch products
-                if (data.profile.role === 'seller' && user.role !== 'seller') {
-                    await fetchSellerProducts();
-                }
             } else {
                 const errorData = await response.json();
                 displayMessage(errorData.error || 'Error updating profile');
@@ -168,33 +144,6 @@ const Profile = () => {
     const displayMessage = (message) => {
         setShowMessage(message);
         setTimeout(() => setShowMessage(''), 3000);
-    };
-
-    const handleProductClick = (productId) => {
-        navigate(`/product/${productId}`);
-    };
-
-    const handleEditProduct = (productId) => {
-        navigate(`/add-product?edit=${productId}`);
-    };
-
-    const handleDeleteProduct = async (productId, productName) => {
-        const confirmed = window.confirm(
-            `Are you sure you want to delete "${productName}"?\n\nThis action cannot be undone.`
-        );
-        
-        if (!confirmed) return;
-
-        try {
-            await axiosInstance.delete(`/products/${productId}/`);
-            displayMessage('Product deleted successfully!');
-            
-            // Remove the product from the list
-            setSellerProducts(prev => prev.filter(p => p.id !== productId));
-        } catch (error) {
-            console.error('Error deleting product:', error);
-            displayMessage('Error deleting product. Please try again.');
-        }
     };
 
     if (loading) {
@@ -446,97 +395,6 @@ const Profile = () => {
                                     )}
                                 </div>
                             </div>
-                        </div>
-                    )}
-
-                    {/* Seller Products Section */}
-                    {user?.role === 'seller' && (
-                        <div className="seller-products-section">
-                            <div className="section-header">
-                                <h2>
-                                    <FaBox />
-                                    My Products ({sellerProducts.length})
-                                </h2>
-                                <button 
-                                    className="btn-add-product"
-                                    onClick={() => navigate('/add-product')}
-                                >
-                                    <FaPlus />
-                                    Add New Product
-                                </button>
-                            </div>
-
-                            {productsLoading ? (
-                                <div className="loading-container">
-                                    <div className="loading-spinner"></div>
-                                    <p>Loading your products...</p>
-                                </div>
-                            ) : sellerProducts.length === 0 ? (
-                                <div className="empty-products">
-                                    <FaBox />
-                                    <h3>No Products Yet</h3>
-                                    <p>Start selling by adding your first eco-friendly product!</p>
-                                    <button 
-                                        className="btn-add-first-product"
-                                        onClick={() => navigate('/add-product')}
-                                    >
-                                        <FaPlus />
-                                        Add Your First Product
-                                    </button>
-                                </div>
-                            ) : (
-                                <div className="products-grid">
-                                    {sellerProducts.map(product => (
-                                        <div key={product.id} className="product-card">
-                                            <div className="product-image">
-                                                <img 
-                                                    src={product.image_url || product.image} 
-                                                    alt={product.name}
-                                                    onError={(e) => {
-                                                        e.target.src = 'https://images.unsplash.com/photo-1559056199-641a0ac8b55e?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80';
-                                                    }}
-                                                />
-                                                <div className="product-status">
-                                                    {product.is_validated ? (
-                                                        <span className="status-verified">Verified</span>
-                                                    ) : (
-                                                        <span className="status-pending">Pending</span>
-                                                    )}
-                                                </div>
-                                            </div>
-                                            <div className="product-info">
-                                                <h4>{product.name}</h4>
-                                                <p className="product-category">{product.category_display}</p>
-                                                <p className="product-price">Rs {Math.round(product.price)}</p>
-                                                <p className="product-stock">Stock: {product.stock}</p>
-                                                <div className="product-actions">
-                                                    <button 
-                                                        className="btn-view"
-                                                        onClick={() => handleProductClick(product.id)}
-                                                    >
-                                                        <FaEye />
-                                                        View
-                                                    </button>
-                                                    <button 
-                                                        className="btn-edit"
-                                                        onClick={() => handleEditProduct(product.id)}
-                                                    >
-                                                        <FaEdit />
-                                                        Edit
-                                                    </button>
-                                                    <button 
-                                                        className="btn-delete"
-                                                        onClick={() => handleDeleteProduct(product.id, product.name)}
-                                                    >
-                                                        <FaTrash />
-                                                        Delete
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
                         </div>
                     )}
                 </div>

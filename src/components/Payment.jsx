@@ -23,6 +23,7 @@ import {
 import { cartService } from '../services/cartService';
 import { esewaService } from '../services/esewaService';
 import { getUserFromToken } from '../utils/auth';
+import { getImageUrl, handleImageError } from '../utils/imageHelper';
 import Header from './Header';
 import '../styles/Header.css';
 
@@ -744,7 +745,11 @@ const Payment = () => {
                 {cartItems.map(item => (
                   <div key={item.id} className="preview-item">
                     <div className="preview-image">
-                      <img src={item.product.image_url || item.product.image} alt={item.product.name} />
+                      <img 
+                        src={getImageUrl(item.product.image_url, item.product.image)} 
+                        alt={item.product.name}
+                        onError={handleImageError}
+                      />
                     </div>
                     <div className="preview-details">
                       <div className="preview-name">{item.product.name}</div>

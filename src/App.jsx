@@ -19,6 +19,7 @@ import Profile from "./components/Profile";
 import ViewAll from "./components/ViewAll";
 import Wishlist from "./components/Wishlist";
 import SellerDashboard from "./components/SellerDashboard";
+import OrderTracking from "./components/OrderTracking";
 
 function App() {
   return (
@@ -104,6 +105,12 @@ function App() {
         <Route path="/add-product" element={
           <ProtectedRoute>
             <AddProduct />
+          </ProtectedRoute>
+        } />
+
+        <Route path="/track-order/:orderId" element={
+          <ProtectedRoute>
+            <OrderTracking />
           </ProtectedRoute>
         } />
 

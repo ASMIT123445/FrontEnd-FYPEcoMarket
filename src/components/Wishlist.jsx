@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { FaHome, FaChevronRight, FaHeart, FaShoppingCart, FaTrash, FaStar } from 'react-icons/fa';
 import { wishlistService } from '../services/wishlistService';
 import { cartService } from '../services/cartService';
+import { getImageUrl, handleImageError } from '../utils/imageHelper';
 import Header from './Header';
 import '../styles/Wishlist.css';
 
@@ -172,11 +173,9 @@ const Wishlist = () => {
                             <div key={item.id} className="wishlist-item">
                                 <div className="item-image" onClick={() => navigate(`/product/${item.id}`)}>
                                     <img 
-                                        src={item.image} 
+                                        src={getImageUrl(item.image_url, item.image)} 
                                         alt={item.name}
-                                        onError={(e) => {
-                                            e.target.src = 'https://images.unsplash.com/photo-1559056199-641a0ac8b55e?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80';
-                                        }}
+                                        onError={handleImageError}
                                     />
                                     <button 
                                         className="remove-wishlist"

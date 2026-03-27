@@ -9,6 +9,7 @@ import { wishlistService } from '../services/wishlistService';
 import { cartService } from '../services/cartService';
 import axiosInstance from '../services/axiosInstance';
 import { getUserFromToken } from '../utils/auth';
+import { getImageUrl, handleImageError } from '../utils/imageHelper';
 import '../styles/Home.css';
 
 export default function ViewAll() {
@@ -443,11 +444,9 @@ export default function ViewAll() {
                                 >
                                     <div className="home-product-image-container">
                                         <img 
-                                            src={product.image_url || product.image} 
+                                            src={getImageUrl(product.image_url, product.image)} 
                                             alt={product.name}
-                                            onError={(e) => {
-                                                e.target.src = 'https://images.unsplash.com/photo-1559056199-641a0ac8b55e?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80';
-                                            }}
+                                            onError={handleImageError}
                                         />
                                         {product.badge && (
                                             <div className="product-badge">{product.badge}</div>

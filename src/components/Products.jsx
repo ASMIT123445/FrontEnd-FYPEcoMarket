@@ -49,6 +49,7 @@ import {logout, getUserFromToken} from "../utils/auth";
 import {cartService} from "../services/cartService";
 import {wishlistService} from "../services/wishlistService";
 import axiosInstance from "../services/axiosInstance";
+import {getImageUrl, handleImageError} from "../utils/imageHelper";
 import "../styles/Home.css";
 
 export default function Products() {
@@ -57,6 +58,7 @@ export default function Products() {
     const [recommendedProducts, setRecommendedProducts] = useState([]);
     const [trendingProducts, setTrendingProducts] = useState([]);
     const [newArrivalsProducts, setNewArrivalsProducts] = useState([]);
+    const [topSellerProducts, setTopSellerProducts] = useState([]);
     const [cartItems, setCartItems] = useState(0);
     const [showSidebar, setShowSidebar] = useState(false);
     const [search, setSearch] = useState("");
@@ -210,18 +212,38 @@ export default function Products() {
 
                 const response = await axiosInstance.get(url);
                 
-                // Create different randomized sections from the same data
+                // Create different sections from the same data with meaningful ordering
                 const allProducts = response.data;
                 
-                // Randomize for each section separately
-                const shuffledRecommended = [...allProducts].sort(() => Math.random() - 0.5);
-                const shuffledTrending = [...allProducts].sort(() => Math.random() - 0.5);
-                const shuffledNewArrivals = [...allProducts].sort(() => Math.random() - 0.5);
+                // Recommended: highest rated products (rating desc)
+                const recommended = [...allProducts]
+                    .sort((a, b) => (b.rating || 0) - (a.rating || 0))
+                    .slice(0, 10);
                 
-                setProducts(allProducts);
-                setRecommendedProducts(shuffledRecommended);
-                setTrendingProducts(shuffledTrending);
-                setNewArrivalsProducts(shuffledNewArrivals);
+                // Trending: most recently added (newest first)
+                const trending = [...allProducts]
+                    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+                    .slice(0, 10);
+                
+                // New Arrivals: same as trending but offset (next 10 newest)
+                const newArrivals = [...allProducts]
+                    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+                    .slice(10, 20);
+                
+                // Recently Added: newest first (for the main scrollable grid)
+                const recentlySorted = [...allProducts]
+                    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+                // Top Seller: lowest price first (best value / most accessible)
+                const topSellers = [...allProducts]
+                    .sort((a, b) => a.price - b.price)
+                    .slice(0, 10);
+
+                setProducts(recentlySorted);
+                setRecommendedProducts(recommended);
+                setTrendingProducts(trending);
+                setNewArrivalsProducts(newArrivals);
+                setTopSellerProducts(topSellers);
             } catch (error) {
                 console.error('Error fetching products:', error);
                 // Fallback to empty arrays when API fails
@@ -229,6 +251,7 @@ export default function Products() {
                 setRecommendedProducts([]);
                 setTrendingProducts([]);
                 setNewArrivalsProducts([]);
+                setTopSellerProducts([]);
             }
         };
 
@@ -423,7 +446,7 @@ export default function Products() {
     // Check scroll buttons when products change
     useEffect(() => {
         setTimeout(checkScrollButtons, 100);
-    }, [recommendedProducts, trendingProducts, newArrivalsProducts]);
+    }, [recommendedProducts, trendingProducts, newArrivalsProducts, topSellerProducts]);
 
     // Render product section component
     const renderProductSection = (title, products, sectionId) => (
@@ -454,11 +477,9 @@ export default function Products() {
                         key={`${sectionId}-${product.id}`}>
                         <div className="home-product-image-container"
                             onClick={() => navigate(`/product/${product.id}`)}>
-                            <img src={product.image_url || product.image}
+                            <img src={getImageUrl(product.image_url, product.image)}
                                 alt={product.name}
-                                onError={(e) => {
-                                    e.target.src = 'https://images.unsplash.com/photo-1559056199-641a0ac8b55e?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80';
-                                }}
+                                onError={handleImageError}
                             />
                             {product.badge && (
                                 <div className="product-badge">
@@ -480,7 +501,7 @@ export default function Products() {
                             onClick={() => navigate(`/product/${product.id}`)}>
                             <div className="seller-info">
                                 <span className="seller-name">
-                                    {product.seller}
+                                    {product.seller_name || 'Ecomarket Seller'}
                                 </span>
                                 <span className="shipping-info">
                                     {product.shipping}
@@ -493,9 +514,9 @@ export default function Products() {
 
                             <div className="rating-info">
                                 <div className="stars">
-                                    {renderStars(product.eco_rating || 4.5)}
+                                    {renderStars(product.rating || 0)}
                                     <span className="rating-number">
-                                        {product.eco_rating || 4.5}
+                                        {product.rating ? product.rating.toFixed(1) : 'No ratings'}
                                     </span>
                                 </div>
                                 <span className="review-count">({product.reviews || 100})</span>
@@ -905,9 +926,8 @@ export default function Products() {
                                 }>
                                     <div className="seller-info">
                                         <span className="seller-name">
-                                            {
-                                            product.seller
-                                        }</span>
+                                            {product.seller_name || 'Ecomarket Seller'}
+                                        </span>
                                         <span className="shipping-info">
                                             {
                                             product.shipping
@@ -922,15 +942,15 @@ export default function Products() {
                                     <div className="rating-info">
                                         <div className="stars">
                                             {
-                                            renderStars(product.eco_rating || 4.5)
+                                            renderStars(product.rating || 0)
                                         }
                                             <span className="rating-number">
                                                 {
-                                                product.eco_rating || 4.5
+                                                product.rating ? product.rating.toFixed(1) : 'No ratings'
                                             }</span>
                                         </div>
                                         <span className="review-count">({
-                                            product.reviews || 100
+                                            product.reviews || 0
                                         })</span>
                                     </div>
 
@@ -1000,7 +1020,7 @@ export default function Products() {
                     <div className="home-products-etsy-grid"
                         ref={productsScrollRef}>
                         {
-                        products.map((product) => (
+                        topSellerProducts.map((product) => (
                             <div className="home-etsy-product-card"
                                 key={
                                     product.id
@@ -1049,9 +1069,8 @@ export default function Products() {
                                 }>
                                     <div className="seller-info">
                                         <span className="seller-name">
-                                            {
-                                            product.seller
-                                        }</span>
+                                            {product.seller_name || 'Ecomarket Seller'}
+                                        </span>
                                         <span className="shipping-info">
                                             {
                                             product.shipping
@@ -1066,15 +1085,15 @@ export default function Products() {
                                     <div className="rating-info">
                                         <div className="stars">
                                             {
-                                            renderStars(product.eco_rating || 4.5)
+                                            renderStars(product.rating || 0)
                                         }
                                             <span className="rating-number">
                                                 {
-                                                product.eco_rating || 4.5
+                                                product.rating ? product.rating.toFixed(1) : 'No ratings'
                                             }</span>
                                         </div>
                                         <span className="review-count">({
-                                            product.reviews || 100
+                                            product.reviews || 0
                                         })</span>
                                     </div>
 

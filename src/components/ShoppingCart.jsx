@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { FaArrowLeft, FaHome, FaChevronRight, FaShoppingCart, FaLeaf, FaMinus, FaPlus, FaTrash, FaLock, FaCheckCircle } from 'react-icons/fa';
 import { getUserFromToken } from '../utils/auth';
 import { cartService } from '../services/cartService';
+import { getImageUrl, handleImageError } from '../utils/imageHelper';
 import Header from './Header';
 import '../styles/ShoppingCart.css';
 import '../styles/Header.css';
@@ -271,7 +272,11 @@ const ShoppingCart = () => {
                   return (
                     <div key={item.id} className="cart-item">
                       <div className="item-image">
-                        <img src={item.product.image_url || item.product.image} alt={item.product.name} />
+                        <img 
+                          src={getImageUrl(item.product.image_url, item.product.image)} 
+                          alt={item.product.name}
+                          onError={handleImageError}
+                        />
                       </div>
                       <div className="item-details">
                         <div className="item-header">
@@ -410,6 +415,16 @@ const ShoppingCart = () => {
                             {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
                           </span>
                           <span className="order-total">Rs {Math.round(order.total_amount)}</span>
+                          <button
+                            onClick={() => navigate(`/track-order/${order.id}`)}
+                            style={{
+                              background: '#2E7D32', color: 'white', border: 'none',
+                              borderRadius: '6px', padding: '4px 12px', cursor: 'pointer',
+                              fontSize: '0.8rem'
+                            }}
+                          >
+                            Track
+                          </button>
                         </div>
                       </div>
                       
@@ -417,11 +432,9 @@ const ShoppingCart = () => {
                         {order.items.slice(0, 3).map(item => (
                           <div key={item.id} className="history-product">
                             <img 
-                              src={item.product.image_url || item.product.image} 
+                              src={getImageUrl(item.product.image_url, item.product.image)} 
                               alt={item.product.name}
-                              onError={(e) => {
-                                e.target.src = 'https://images.unsplash.com/photo-1559056199-641a0ac8b55e?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80';
-                              }}
+                              onError={handleImageError}
                             />
                             <div className="product-info">
                               <span className="product-name">{item.product.name}</span>

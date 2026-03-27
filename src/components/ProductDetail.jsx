@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { FaArrowLeft, FaHome, FaChevronRight, FaHeart, FaChevronLeft } from 'react-icons/fa';
+import { FaArrowLeft, FaHome, FaChevronRight, FaHeart, FaChevronLeft, FaLeaf, FaShieldAlt, FaRecycle, FaTruck } from 'react-icons/fa';
 import axiosInstance from '../services/axiosInstance';
 import { cartService } from '../services/cartService';
 import { wishlistService } from '../services/wishlistService';
+import { getImageUrl, handleImageError } from '../utils/imageHelper';
 import Header from './Header';
 import '../styles/ProductDetail.css';
 import '../styles/Header.css';
@@ -409,8 +410,9 @@ const ProductDetail = () => {
           <div className="product-images">
             <div className="main-image">
               <img 
-                src={productImages[activeImage] || product.image_url || product.image} 
-                alt={product.name} 
+                src={getImageUrl(productImages[activeImage] || product.image_url, product.image)} 
+                alt={product.name}
+                onError={handleImageError}
               />
             </div>
             {productImages.length > 1 && (
@@ -462,10 +464,10 @@ const ProductDetail = () => {
             </div>
             
             <ul className="features">
-              <li><i className="fas fa-check"></i> Eco-friendly and sustainable</li>
-              <li><i className="fas fa-check"></i> High quality materials</li>
-              <li><i className="fas fa-check"></i> Environmentally conscious</li>
-              <li><i className="fas fa-check"></i> Fast and secure delivery</li>
+              <li><FaLeaf style={{color: '#2E7D32'}} /> Eco-friendly and sustainable</li>
+              <li><FaShieldAlt style={{color: '#2E7D32'}} /> High quality materials</li>
+              <li><FaRecycle style={{color: '#2E7D32'}} /> Environmentally conscious</li>
+              <li><FaTruck style={{color: '#2E7D32'}} /> Fast and secure delivery</li>
             </ul>
             
             {/* Add to Cart Section */}
@@ -612,11 +614,9 @@ const ProductDetail = () => {
               <div key={similarProduct.id} className="product-card">
                 <div className="product-card-img" onClick={() => navigate(`/product/${similarProduct.id}`)}>
                   <img 
-                    src={similarProduct.image_url || similarProduct.image} 
+                    src={getImageUrl(similarProduct.image_url, similarProduct.image)} 
                     alt={similarProduct.name}
-                    onError={(e) => {
-                      e.target.src = 'https://images.unsplash.com/photo-1559056199-641a0ac8b55e?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80';
-                    }}
+                    onError={handleImageError}
                   />
                 </div>
                 <div className="product-card-content">

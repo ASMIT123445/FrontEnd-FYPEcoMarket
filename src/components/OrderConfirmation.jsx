@@ -6,6 +6,7 @@ import {
 } from 'react-icons/fa';
 import Header from './Header';
 import { getUserFromToken } from '../utils/auth';
+import { getImageUrl, handleImageError } from '../utils/imageHelper';
 import '../styles/ShoppingCart.css';
 
 const OrderConfirmation = () => {
@@ -180,11 +181,9 @@ const OrderConfirmation = () => {
                                     <div key={item.id} className="confirmed-item">
                                         <div className="item-image">
                                             <img 
-                                                src={item.product.image_url || item.product.image} 
+                                                src={getImageUrl(item.product.image_url, item.product.image)} 
                                                 alt={item.product.name}
-                                                onError={(e) => {
-                                                    e.target.src = 'https://images.unsplash.com/photo-1559056199-641a0ac8b55e?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80';
-                                                }}
+                                                onError={handleImageError}
                                             />
                                         </div>
                                         <div className="item-details">
@@ -241,11 +240,11 @@ const OrderConfirmation = () => {
                                 Continue Shopping
                             </button>
                             <button 
-                                onClick={() => navigate('/cart')} 
+                                onClick={() => navigate(`/track-order/${order.id}`)} 
                                 className="btn-view-orders"
                             >
-                                <FaShoppingCart />
-                                View Purchase History
+                                <FaBox />
+                                Track Order
                             </button>
                         </div>
                     </div>

@@ -8,6 +8,7 @@ import {
 import Header from './Header';
 import { getUserFromToken } from '../utils/auth';
 import axiosInstance from '../services/axiosInstance';
+import { getImageUrl, handleImageError } from '../utils/imageHelper';
 import '../styles/SellerDashboard.css';
 
 const SellerDashboard = () => {
@@ -26,13 +27,41 @@ const SellerDashboard = () => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const userInfo = getUserFromToken();
-        if (!userInfo || userInfo.role !== 'seller') {
-            navigate('/products');
-            return;
-        }
-        setUser(userInfo);
-        fetchDashboardData();
+        const initUser = async () => {
+            const userInfo = getUserFromToken();
+            if (!userInfo) {
+                navigate('/products');
+                return;
+            }
+            
+            // Fetch full profile to get role
+            try {
+                const response = await fetch('http://127.0.0.1:8000/api/profile/', {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('access')}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const profileData = await response.json();
+                    if (profileData.role !== 'seller') {
+                        alert('Access denied. Seller account required.');
+                        navigate('/products');
+                        return;
+                    }
+                    setUser(profileData);
+                    fetchDashboardData();
+                } else {
+                    navigate('/products');
+                }
+            } catch (error) {
+                console.error('Error fetching profile:', error);
+                navigate('/products');
+            }
+        };
+
+        initUser();
     }, [navigate]);
 
     const fetchDashboardData = async () => {
@@ -43,7 +72,7 @@ const SellerDashboard = () => {
             setProducts(productsRes.data);
 
             // Fetch orders
-            const ordersRes = await axiosInstance.get('/orders/history/');
+            const ordersRes = await axiosInstance.get('/orders/seller/orders/');
             setOrders(ordersRes.data);
 
             // Calculate stats
@@ -60,6 +89,16 @@ const SellerDashboard = () => {
             });
         } catch (error) {
             console.error('Error fetching dashboard data:', error);
+            // Set empty data on error instead of crashing
+            setProducts([]);
+            setOrders([]);
+            setStats({
+                totalProducts: 0,
+                verifiedProducts: 0,
+                pendingProducts: 0,
+                totalOrders: 0,
+                totalRevenue: 0
+            });
         } finally {
             setLoading(false);
         }
@@ -75,6 +114,26 @@ const SellerDashboard = () => {
         } catch (error) {
             console.error('Error deleting product:', error);
             alert('Error deleting product');
+        }
+    };
+
+    const handleUpdateOrderStatus = async (orderId, newStatus) => {
+        try {
+            const res = await fetch(`http://127.0.0.1:8000/api/orders/${orderId}/status/`, {
+                method: 'PATCH',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('access')}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ status: newStatus })
+            });
+            if (res.ok) {
+                setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
+            } else {
+                alert('Failed to update status');
+            }
+        } catch (err) {
+            alert('Error updating order status');
         }
     };
 
@@ -225,7 +284,11 @@ const SellerDashboard = () => {
                                     <div className="products-list">
                                         {products.slice(0, 5).map(product => (
                                             <div key={product.id} className="product-row">
-                                                <img src={product.image_url || product.image} alt={product.name} />
+                                                <img 
+                                                  src={getImageUrl(product.image_url, product.image)} 
+                                                  alt={product.name}
+                                                  onError={handleImageError}
+                                                />
                                                 <div className="product-details">
                                                     <h4>{product.name}</h4>
                                                     <p>Rs {Math.round(product.price)} • Stock: {product.stock}</p>
@@ -267,9 +330,10 @@ const SellerDashboard = () => {
                                         <div key={product.id} className="product-card">
                                             <div className="product-image">
                                                 <img 
-                                                    src={product.image_url || product.image} 
+                                                    src={getImageUrl(product.image_url, product.image)} 
                                                     alt={product.name}
                                                     onClick={() => navigate(`/product/${product.id}`)}
+                                                    onError={handleImageError}
                                                 />
                                                 <span className={`status-badge ${product.is_validated ? 'verified' : 'pending'}`}>
                                                     {product.is_validated ? '✓ Verified' : '⏳ Pending'}
@@ -341,9 +405,18 @@ const SellerDashboard = () => {
                                                     <td>{order.items?.length || 0} items</td>
                                                     <td>Rs {Math.round(order.total_amount)}</td>
                                                     <td>
-                                                        <span className={`status-pill ${order.status}`}>
-                                                            {order.status}
-                                                        </span>
+                                                        <select
+                                                            value={order.status}
+                                                            onChange={(e) => handleUpdateOrderStatus(order.id, e.target.value)}
+                                                            className={`status-select ${order.status}`}
+                                                        >
+                                                            <option value="pending">Pending</option>
+                                                            <option value="confirmed">Confirmed</option>
+                                                            <option value="processing">Processing</option>
+                                                            <option value="shipped">Shipped</option>
+                                                            <option value="delivered">Delivered</option>
+                                                            <option value="cancelled">Cancelled</option>
+                                                        </select>
                                                     </td>
                                                     <td>
                                                         <span className={`payment-pill ${order.payment_status}`}>
