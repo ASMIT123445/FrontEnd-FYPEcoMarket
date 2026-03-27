@@ -674,6 +674,7 @@ export default function Products() {
                                 'art_supplies': <FaPalette/>
                             };
                             
+
                             return (
                                 <button 
                                     key={category.id}
