@@ -541,7 +541,7 @@ const ProductDetail = () => {
                 <span className="your-rating-text">Your rating: {userRating}★</span>
               )}
             </div>
-            
+          
             {/* Review Comment Section */}
             <div className="review-input-section">
               <textarea

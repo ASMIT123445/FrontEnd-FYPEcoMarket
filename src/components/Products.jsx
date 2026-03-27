@@ -704,7 +704,7 @@ export default function Products() {
                                 appliedFilters.ecoRating.length
                             })`
                         } </button>
-                        
+
 
                         {
                         showFilters && (
