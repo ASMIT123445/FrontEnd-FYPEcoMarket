@@ -352,7 +352,7 @@ const Profile = () => {
                             </button>
                         </div>
                     </div>
-
+ 
                     {/* Points History Modal */}
                     {showPointsHistory && (
                         <div className="modal-overlay" onClick={() => setShowPointsHistory(false)}>
@@ -402,5 +402,6 @@ const Profile = () => {
         </div>
     );
 };
+
 
 export default Profile;

@@ -781,6 +781,7 @@ const Payment = () => {
                     <span>- Rs {Math.round(pointsDiscount)}</span>
                   </div>
                 )}
+
                 <div className="total-row total">
                   <span>Total</span>
                   <span>Rs {Math.round(total)}</span>
