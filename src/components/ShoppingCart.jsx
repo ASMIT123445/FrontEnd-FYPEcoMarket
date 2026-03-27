@@ -493,8 +493,7 @@ const ShoppingCart = () => {
                 <li><a href="#">Handmade Crafts</a></li>
               </ul>
             </div>
-            
-            
+
             <div className="footer-column">
               <h3>Contact Us</h3>
               <ul className="footer-links">
@@ -515,3 +514,4 @@ const ShoppingCart = () => {
 };
 
 export default ShoppingCart;
+
