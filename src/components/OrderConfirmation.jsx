@@ -122,7 +122,7 @@ const OrderConfirmation = () => {
             <div className="breadcrumb">
                 <div className="container">
                     <div className="breadcrumb-content">
-                        <button onClick={() => navigate('/products')} style={{background: 'none', border: 'none', color: '#2E7D32', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px'}}>
+                        <button onClick={() => navigate('/main')} style={{background: 'none', border: 'none', color: '#2E7D32', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px'}}>
                             <FaHome /> Home
                         </button>
                         <FaChevronRight />
@@ -233,7 +233,7 @@ const OrderConfirmation = () => {
                         {/* Action Buttons */}
                         <div className="confirmation-actions">
                             <button 
-                                onClick={() => navigate('/products')} 
+                                onClick={() => navigate('/main')} 
                                 className="btn-continue-shopping"
                             >
                                 <FaHome />

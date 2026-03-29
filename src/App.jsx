@@ -2,7 +2,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 
 import LandingPage from "./components/LandingPage";
 import Home from "./components/Home";
-import Products from "./components/Products";
+import Main from "./components/Main";
 import Login from "./components/Login";
 import Register from "./components/Register";
 import ForgotPassword from "./components/ForgotPassword";
@@ -41,9 +41,9 @@ function App() {
           </ProtectedRoute>
         } />
 
-        <Route path="/products" element={
+        <Route path="/main" element={
           <ProtectedRoute>
-            <Products />
+            <Main />
           </ProtectedRoute>
         } />
 

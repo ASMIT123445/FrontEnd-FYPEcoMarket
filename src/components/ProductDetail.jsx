@@ -387,7 +387,7 @@ const ProductDetail = () => {
       <div className="breadcrumb">
         <div className="container">
           <div className="breadcrumb-content">
-            <Link to="/products">
+            <Link to="/main">
               <FaHome /> Home
             </Link>
             <FaChevronRight />

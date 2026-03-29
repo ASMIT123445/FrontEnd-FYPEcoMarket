@@ -118,7 +118,7 @@ const Wishlist = () => {
             <div className="breadcrumb">
                 <div className="container">
                     <div className="breadcrumb-content">
-                        <Link to="/products">
+                        <Link to="/main">
                             <FaHome /> Home
                         </Link>
                         <FaChevronRight />
@@ -163,7 +163,7 @@ const Wishlist = () => {
                         <FaHeart className="empty-icon" />
                         <h2>Your wishlist is empty</h2>
                         <p>Save items you love by clicking the heart icon on any product.</p>
-                        <button className="btn-shop" onClick={() => navigate('/products')}>
+                        <button className="btn-shop" onClick={() => navigate('/main')}>
                             Start Shopping
                         </button>
                     </div>

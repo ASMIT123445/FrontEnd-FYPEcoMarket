@@ -204,7 +204,7 @@ export default function Register() {
               navigate("/seller/onboarding");
             } else {
               localStorage.setItem('justRegistered', 'true');
-              navigate("/products");
+              navigate("/main");
             }
           }, 1500);
         }

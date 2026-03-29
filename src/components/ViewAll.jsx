@@ -26,7 +26,8 @@ export default function ViewAll() {
     const [priceRange, setPriceRange] = useState(2500);
     const [appliedFilters, setAppliedFilters] = useState({ecoRating: [], stockStatus: [], maxPrice: 2500});
     const [ecoCategories, setEcoCategories] = useState([]);
-eafgsdvsd
+
+
     // Get search query from URL params
     useEffect(() => {
         const query = searchParams.get('search');

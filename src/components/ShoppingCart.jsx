@@ -229,7 +229,7 @@ const ShoppingCart = () => {
       <div className="breadcrumb">
         <div className="container">
           <div className="breadcrumb-content">
-            <Link to="/products">
+            <Link to="/main">
               <FaHome /> Home
             </Link>
             <FaChevronRight />
@@ -253,7 +253,7 @@ const ShoppingCart = () => {
               <FaShoppingCart />
               <h2>Your cart is empty</h2>
               <p>Looks like you haven't added any eco-friendly products to your cart yet. Start shopping for sustainable goods!</p>
-              <Link to="/products" className="btn-shop">
+              <Link to="/main" className="btn-shop">
                 
                 <span>Start Shopping</span>
               </Link>
@@ -362,7 +362,7 @@ const ShoppingCart = () => {
                     <span>Proceed to Checkout</span>
                   </button>
                   
-                  <Link to="/products" className="continue-shopping">
+                  <Link to="/main" className="continue-shopping">
                     <FaArrowLeft />
                     Continue Shopping
                   </Link>
@@ -475,8 +475,8 @@ const ShoppingCart = () => {
             <div className="footer-column">
               <h3>Quick Links</h3>
               <ul className="footer-links">
-                <li><Link to="/products">Home</Link></li>
-                <li><Link to="/products#categories">Shop</Link></li>
+                <li><Link to="/main">Home</Link></li>
+                <li><Link to="/main#categories">Shop</Link></li>
                 <li><a href="#">Categories</a></li>
                 <li><a href="#">About Us</a></li>
                 <li><a href="#">Contact</a></li>

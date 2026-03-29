@@ -137,6 +137,26 @@ const SellerDashboard = () => {
         }
     };
 
+    const handleUpdatePaymentStatus = async (orderId, newPaymentStatus) => {
+        try {
+            const res = await fetch(`http://127.0.0.1:8000/api/orders/${orderId}/payment-status/`, {
+                method: 'PATCH',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('access')}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ payment_status: newPaymentStatus })
+            });
+            if (res.ok) {
+                setOrders(prev => prev.map(o => o.id === orderId ? { ...o, payment_status: newPaymentStatus } : o));
+            } else {
+                alert('Failed to update payment status');
+            }
+        } catch (err) {
+            alert('Error updating payment status');
+        }
+    };
+
     if (loading) {
         return (
             <div className="seller-dashboard">
@@ -393,14 +413,17 @@ const SellerDashboard = () => {
                                                 <th>Date</th>
                                                 <th>Items</th>
                                                 <th>Total</th>
-                                                <th>Status</th>
-                                                <th>Payment</th>
+                                                <th>Order Status</th>
+                                                <th>Payment Status</th>
                                             </tr>
                                         </thead>
                                         <tbody>
                                             {orders.map(order => (
                                                 <tr key={order.id}>
-                                                    <td>#{order.id}</td>
+                                                    <td>
+                                                        <div>#{order.id}</div>
+                                                        <div style={{fontSize: '0.78rem', color: '#555', marginTop: '2px'}}>{order.customer_name}</div>
+                                                    </td>
                                                     <td>{new Date(order.created_at).toLocaleDateString()}</td>
                                                     <td>{order.items?.length || 0} items</td>
                                                     <td>Rs {Math.round(order.total_amount)}</td>
@@ -419,9 +442,16 @@ const SellerDashboard = () => {
                                                         </select>
                                                     </td>
                                                     <td>
-                                                        <span className={`payment-pill ${order.payment_status}`}>
-                                                            {order.payment_status}
-                                                        </span>
+                                                        <select
+                                                            value={order.payment_status}
+                                                            onChange={(e) => handleUpdatePaymentStatus(order.id, e.target.value)}
+                                                            className={`status-select ${order.payment_status}`}
+                                                        >
+                                                            <option value="pending">Pending</option>
+                                                            <option value="cash_payment">Cash Payment</option>
+                                                            <option value="completed">Completed</option>
+                                                            <option value="failed">Failed</option>
+                                                        </select>
                                                     </td>
                                                 </tr>
                                             ))}

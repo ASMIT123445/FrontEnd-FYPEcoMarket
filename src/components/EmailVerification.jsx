@@ -44,7 +44,7 @@ export default function EmailVerification() {
       if (response.data.role === "seller") {
         navigate("/seller/onboarding");
       } else {
-        navigate("/products");
+        navigate("/main");
       }
 
     } catch (error) {

@@ -112,7 +112,7 @@ export default function Login() {
 
       // Redirect after delay
       setTimeout(() => {
-        navigate("/products");
+        navigate("/main");
       }, 1500);
 
     } catch (err) {

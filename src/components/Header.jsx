@@ -41,7 +41,7 @@ const Header = ({
       <div className="container">
         <div className="header-content">
           <div className="header-left">
-            <Link to="/products" className="logo">
+            <Link to="/main" className="logo">
               <FaLeaf />
               <span className="logo-text">Ecomarket</span>
             </Link>
@@ -49,7 +49,7 @@ const Header = ({
           
           <div className="header-right">
             <div className="nav-actions">
-              <div className="nav-icon">
+              <div className="nav-icon" onClick={() => navigate('/wishlist')}>
                 <FaHeart />
                 <span className="badge">3</span>
               </div>

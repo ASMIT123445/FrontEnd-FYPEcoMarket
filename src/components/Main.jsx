@@ -52,7 +52,7 @@ import axiosInstance from "../services/axiosInstance";
 import {getImageUrl, handleImageError} from "../utils/imageHelper";
 import "../styles/Home.css";
 
-export default function Products() {
+export default function Main() {
     const navigate = useNavigate();
     const [products, setProducts] = useState([]);
     const [recommendedProducts, setRecommendedProducts] = useState([]);

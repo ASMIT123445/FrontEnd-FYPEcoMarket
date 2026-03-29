@@ -416,7 +416,7 @@ const Payment = () => {
           <div className="empty-cart-message">
             <h2>Your cart is empty</h2>
             <p>Add some products to your cart before checkout.</p>
-            <Link to="/products" className="btn-continue-shopping">
+            <Link to="/main" className="btn-continue-shopping">
               Continue Shopping
             </Link>
           </div>
@@ -907,7 +907,7 @@ const Payment = () => {
                 <FaClipboardList />
                 View Orders
               </button>
-              <button className="modal-btn btn-continue-shopping" onClick={() => navigate('/products')}>
+              <button className="modal-btn btn-continue-shopping" onClick={() => navigate('/main')}>
                 <FaShoppingCart />
                 Continue Shopping
               </button>
@@ -934,8 +934,8 @@ const Payment = () => {
             <div className="footer-column">
               <h3>Quick Links</h3>
               <ul className="footer-links">
-                <li><Link to="/products">Home</Link></li>
-                <li><Link to="/products">Shop</Link></li>
+                <li><Link to="/main">Home</Link></li>
+                <li><Link to="/main">Shop</Link></li>
                 <li><a href="#">Categories</a></li>
                 <li><a href="#">About Us</a></li>
                 <li><a href="#">Contact</a></li>

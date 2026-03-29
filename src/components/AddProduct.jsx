@@ -285,7 +285,7 @@ export default function AddProduct() {
           
           // Redirect to products page after 2 seconds
           setTimeout(() => {
-            navigate("/products");
+            navigate("/main");
           }, 2000);
         }
       }

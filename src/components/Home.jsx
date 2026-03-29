@@ -30,7 +30,7 @@ export default function Home() {
               knowing your choices support a greener Nepal.
             </p>
             <div className="hero-buttons">
-              <button className="btn-primary" onClick={() => navigate('/products')}>
+              <button className="btn-primary" onClick={() => navigate('/main')}>
                 <FaShoppingCart />
                 <span>Start Shopping</span>
               </button>
@@ -108,22 +108,22 @@ export default function Home() {
             Browse through our carefully created categories of sustainable products
           </p>
           <div className="categories-grid">
-            <div className="category-card" onClick={() => navigate('/products?category=recycled_items')}>
+            <div className="category-card" onClick={() => navigate('/main?category=recycled_items')}>
               <FaRecycle className="category-icon" />
               <h3>Recycled Items</h3>
               <p>Products made from recycled materials</p>
             </div>
-            <div className="category-card" onClick={() => navigate('/products?category=organic_products')}>
+            <div className="category-card" onClick={() => navigate('/main?category=organic_products')}>
               <FaSeedling className="category-icon" />
               <h3>Organic Products</h3>
               <p>100% organic and natural goods</p>
             </div>
-            <div className="category-card" onClick={() => navigate('/products?category=reusable_household')}>
+            <div className="category-card" onClick={() => navigate('/main?category=reusable_household')}>
               <FaLeaf className="category-icon" />
               <h3>Reusable Household</h3>
               <p>Sustainable home essentials</p>
             </div>
-            <div className="category-card" onClick={() => navigate('/products')}>
+            <div className="category-card" onClick={() => navigate('/main')}>
               <FaArrowRight className="category-icon" />
               <h3>View All Categories</h3>
               <p>Explore all 7 eco categories</p>
@@ -169,7 +169,7 @@ export default function Home() {
           <div className="cta-content">
             <h2>Ready to Shop Sustainably?</h2>
             <p>Join the movement towards a greener Nepal. Start exploring verified eco-friendly products today.</p>
-            <button className="btn-cta" onClick={() => navigate('/products')}>
+            <button className="btn-cta" onClick={() => navigate('/main')}>
               Start Shopping Now
               <FaArrowRight />
             </button>
