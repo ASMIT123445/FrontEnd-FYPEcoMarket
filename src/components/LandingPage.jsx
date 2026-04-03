@@ -19,9 +19,9 @@ export default function LandingPage() {
 
             <ul className="nav-links">
               <li><a href="#home">Home</a></li>
-              <li><a href="#features">Features</a></li>
               <li><a href="#categories">Categories</a></li>
-              <li><a href="#contact">Contact</a></li>
+              <li><a href="#about">About Us</a></li>
+              <li><a href="#join">Join Us</a></li>
             </ul>
 
             <div className="nav-actions">
@@ -92,7 +92,7 @@ export default function LandingPage() {
       </section> */}
 
       {/* What is Ecomarket Section */}
-      <section className="about-section">
+      <section className="about-section" id="about">
         <div className="container">
           <div className="section-title">
             <h2>What is Ecomarket?</h2>
@@ -159,8 +159,55 @@ export default function LandingPage() {
       </section>
 
     
+      {/* Eco Categories Section */}
+      <section className="eco-categories-section" id="categories">
+        <div className="container">
+          <div className="section-title">
+            <h2>Our Eco Categories</h2>
+            <p>Explore our 7 carefully curated sustainable product categories</p>
+          </div>
+          <div className="eco-categories-grid">
+            <div className="eco-category-card">
+              <div className="eco-cat-icon"><i className="fas fa-recycle"></i></div>
+              <h3>Recycled Items</h3>
+              <p>Products crafted from recycled and upcycled materials</p>
+            </div>
+            <div className="eco-category-card">
+              <div className="eco-cat-icon"><i className="fas fa-seedling"></i></div>
+              <h3>Organic Products</h3>
+              <p>100% organic and naturally sourced goods</p>
+            </div>
+            <div className="eco-category-card">
+              <div className="eco-cat-icon"><i className="fas fa-solar-panel"></i></div>
+              <h3>Energy-Efficient</h3>
+              <p>Products designed to reduce energy consumption</p>
+            </div>
+            <div className="eco-category-card">
+              <div className="eco-cat-icon"><i className="fas fa-home"></i></div>
+              <h3>Reusable Household</h3>
+              <p>Durable, reusable alternatives for everyday home use</p>
+            </div>
+            <div className="eco-category-card">
+              <div className="eco-cat-icon"><i className="fas fa-paint-brush"></i></div>
+              <h3>Handmade Eco-Crafts</h3>
+              <p>Artisan-made products with sustainable materials</p>
+            </div>
+            <div className="eco-category-card">
+              <div className="eco-cat-icon"><i className="fas fa-tshirt"></i></div>
+              <h3>Sustainable Fashion</h3>
+              <p>Ethical clothing and accessories for conscious dressing</p>
+            </div>
+            <div className="eco-category-card">
+              <div className="eco-cat-icon"><i className="fas fa-leaf"></i></div>
+              <h3>Eco Home & Garden</h3>
+              <p>Green solutions for your home and outdoor spaces</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* CTA */}
-      <section className="cta">
+      <section className="cta" id="join">
         <div className="container">
           <div className="cta-content">
             <h2>Join the Sustainable Shopping Movement</h2>

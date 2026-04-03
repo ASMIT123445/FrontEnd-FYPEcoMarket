@@ -101,7 +101,7 @@ export default function SellerOnboarding() {
         // Set flag for welcome message
         localStorage.setItem('justRegistered', 'true');
         setTimeout(() => {
-          navigate("/products");
+          navigate("/main");
         }, 2000);
       } else {
         setMessage({

@@ -217,9 +217,9 @@ const ProductDetail = () => {
     const fetchSimilarProducts = async () => {
       try {
         const response = await axiosInstance.get('/products/');
-        // Filter out current product and take first 7 for scrollable view
+        // Filter out current product and unverified products
         const filtered = response.data
-          .filter(p => p.id !== parseInt(id))
+          .filter(p => p.id !== parseInt(id) && p.is_validated)
           .slice(0, 7);
         setSimilarProducts(filtered);
       } catch (err) {
@@ -472,45 +472,58 @@ const ProductDetail = () => {
             
             {/* Add to Cart Section */}
             <div className="cart-controls">
-              <div className="quantity-selector">
-                <button className="qty-btn" onClick={decreaseQty}>-</button>
-                <input 
-                  type="number" 
-                  className="qty-input" 
-                  value={quantity}
-                  min="1" 
-                  max={product.stock || 1}
-                  onChange={handleQuantityChange}
-                />
-                <button className="qty-btn" onClick={increaseQty}>+</button>
-              </div>
-              
-              <div className="action-buttons">
-                <button className="btn btn-primary" onClick={addToCartHandler}>
-                  <i className="fas fa-cart-plus"></i>
-                  Add to Cart
-                </button>
-                <button className="btn btn-secondary" onClick={buyNow}>
-                  <i className="fas fa-bolt"></i>
-                  Buy Now
-                </button>
-                <button 
-                  className={`btn btn-wishlist ${wishlistService.isInWishlist(product.id) ? 'active' : ''}`}
-                  onClick={() => {
-                    const isInWishlist = wishlistService.isInWishlist(product.id);
-                    if (isInWishlist) {
-                      wishlistService.removeFromWishlist(product.id);
-                      displayMessage('Removed from wishlist');
-                    } else {
-                      wishlistService.addToWishlist(product);
-                      displayMessage('Added to wishlist');
-                    }
-                  }}
-                >
-                  <FaHeart />
-                  {wishlistService.isInWishlist(product.id) ? 'Remove from Wishlist' : 'Add to Wishlist'}
-                </button>
-              </div>
+              {product.is_validated ? (
+                <>
+                  <div className="quantity-selector">
+                    <button className="qty-btn" onClick={decreaseQty}>-</button>
+                    <input 
+                      type="number" 
+                      className="qty-input" 
+                      value={quantity}
+                      min="1" 
+                      max={product.stock || 1}
+                      onChange={handleQuantityChange}
+                    />
+                    <button className="qty-btn" onClick={increaseQty}>+</button>
+                  </div>
+                  
+                  <div className="action-buttons">
+                    <button className="btn btn-primary" onClick={addToCartHandler}>
+                      <i className="fas fa-cart-plus"></i>
+                      Add to Cart
+                    </button>
+                    <button className="btn btn-secondary" onClick={buyNow}>
+                      <i className="fas fa-bolt"></i>
+                      Buy Now
+                    </button>
+                    <button 
+                      className={`btn btn-wishlist ${wishlistService.isInWishlist(product.id) ? 'active' : ''}`}
+                      onClick={() => {
+                        const isInWishlist = wishlistService.isInWishlist(product.id);
+                        if (isInWishlist) {
+                          wishlistService.removeFromWishlist(product.id);
+                          displayMessage('Removed from wishlist');
+                        } else {
+                          wishlistService.addToWishlist(product);
+                          displayMessage('Added to wishlist');
+                        }
+                      }}
+                    >
+                      <FaHeart />
+                      {wishlistService.isInWishlist(product.id) ? 'Remove from Wishlist' : 'Add to Wishlist'}
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <div style={{
+                  background: '#fff3e0', border: '1px solid #ffb74d',
+                  borderRadius: '10px', padding: '20px', textAlign: 'center'
+                }}>
+                  <p style={{ color: '#e65100', fontWeight: 600, fontSize: '1rem', margin: 0 }}>
+                    ⏳ This product is pending admin verification and is not available for purchase yet.
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         </div>

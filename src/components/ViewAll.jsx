@@ -191,7 +191,7 @@ export default function ViewAll() {
             <header className="header1">
                 <div className="container">
                     <nav className="navbar">
-                        <a href="#" className="logo" onClick={() => navigate('/products')}>
+                        <a href="#" className="logo" onClick={() => navigate('/main')}>
                             <FaLeaf className="logo-icon"/>
                             <span className="logo-text">Ecomarket</span>
                         </a>
@@ -259,7 +259,7 @@ export default function ViewAll() {
             <div className="home-main-container">
                 {/* Breadcrumb */}
                 <div className="breadcrumb" style={{margin: '20px 0', fontSize: '14px', color: '#666'}}>
-                    <span onClick={() => navigate('/products')} style={{color: '#2E7D32', cursor: 'pointer'}}>Home</span>
+                    <span onClick={() => navigate('/main')} style={{color: '#2E7D32', cursor: 'pointer'}}>Home</span>
                     <span style={{margin: '0 8px'}}> &gt; </span>
                     <span style={{color: '#333', fontWeight: '500'}}>
                         {searchQuery ? `Search: "${searchQuery}"` : 'All Products'}

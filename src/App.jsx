@@ -20,6 +20,7 @@ import ViewAll from "./components/ViewAll";
 import Wishlist from "./components/Wishlist";
 import SellerDashboard from "./components/SellerDashboard";
 import OrderTracking from "./components/OrderTracking";
+import Chat from "./components/Chat";
 
 function App() {
   return (
@@ -111,6 +112,12 @@ function App() {
         <Route path="/track-order/:orderId" element={
           <ProtectedRoute>
             <OrderTracking />
+          </ProtectedRoute>
+        } />
+
+        <Route path="/chat/:orderId" element={
+          <ProtectedRoute>
+            <Chat />
           </ProtectedRoute>
         } />
 

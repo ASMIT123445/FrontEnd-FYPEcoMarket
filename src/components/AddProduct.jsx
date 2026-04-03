@@ -18,6 +18,7 @@ export default function AddProduct() {
   const editProductId = searchParams.get('edit');
   const [loading, setLoading] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
+  const [sellerVerified, setSellerVerified] = useState(null); // null = loading
   const [message, setMessage] = useState({ type: "", text: "" });
   const [formData, setFormData] = useState({
     name: "",
@@ -26,12 +27,29 @@ export default function AddProduct() {
     stock: "",
     eco_category: "", // Use eco_category instead of category
     product_category: "", // New product category field
-    image: null,
-    rating: 0
+    image: null
   });
 
   const [ecoCategories, setEcoCategories] = useState([]);
   const [productCategories, setProductCategories] = useState([]);
+
+  // Check seller verification status on mount
+  useEffect(() => {
+    const checkVerification = async () => {
+      try {
+        const response = await axiosInstance.get('/profile/');
+        const profile = response.data;
+        if (profile.role === 'seller') {
+          setSellerVerified(profile.is_verified === true);
+        } else {
+          setSellerVerified(false); // not a seller
+        }
+      } catch (err) {
+        setSellerVerified(false);
+      }
+    };
+    checkVerification();
+  }, []);
 
   // Fetch eco categories on component mount
   useEffect(() => {
@@ -122,7 +140,6 @@ export default function AddProduct() {
             eco_category: product.eco_category || '',
             product_category: product.product_category || '',
             image: null, // Don't load existing image, user can keep it or change it
-            rating: product.rating || 0
           });
           
           setMessage({ 
@@ -229,8 +246,6 @@ export default function AddProduct() {
       if (formData.image) {
         productData.append('image', formData.image);
       }
-      
-      productData.append('rating', formData.rating || 0);
 
       let response;
       
@@ -275,8 +290,7 @@ export default function AddProduct() {
             stock: "",
             eco_category: ecoCategories.length > 0 ? ecoCategories[0].id : "",
             product_category: productCategories.length > 0 ? productCategories[0].id : "",
-            image: null,
-            rating: 0
+            image: null
           });
           
           // Reset file input
@@ -332,7 +346,35 @@ export default function AddProduct() {
         cartCount={2}
       />
 
-      <div className="add-product-container">
+      {/* Unverified seller block */}
+      {sellerVerified === false && (
+        <div className="add-product-container">
+          <div className="add-product-content" style={{ textAlign: 'center', padding: '60px 40px' }}>
+            <div style={{ fontSize: '4rem', marginBottom: '20px' }}>🔒</div>
+            <h2 style={{ color: '#e65100', marginBottom: '15px' }}>Account Not Verified</h2>
+            <p style={{ color: '#666', fontSize: '1.1rem', marginBottom: '30px' }}>
+              Your seller account is pending admin verification. You cannot add products until your account is approved.
+            </p>
+            <p style={{ color: '#999', fontSize: '0.95rem' }}>
+              Please wait for admin to review your onboarding documents. You'll be able to add products once verified.
+            </p>
+            <button
+              onClick={() => navigate('/main')}
+              style={{
+                marginTop: '30px', padding: '12px 30px', background: '#2E7D32',
+                color: 'white', border: 'none', borderRadius: '10px',
+                fontSize: '1rem', cursor: 'pointer', fontWeight: 600
+              }}
+            >
+              Go Back to Home
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Show form only for verified sellers */}
+      {sellerVerified === true && (
+        <div className="add-product-container">
         <div className="add-product-content">
           {/* Header */}
           <div className="add-product-header">
@@ -460,23 +502,6 @@ export default function AddProduct() {
               </div>
             </div>
 
-            <div className="form-group">
-              <label htmlFor="rating">Initial Rating (Optional)</label>
-              <select
-                id="rating"
-                name="rating"
-                className="form-control"
-                value={formData.rating}
-                onChange={handleInputChange}
-              >
-                <option value="0">No Rating</option>
-                <option value="1">1 Star</option>
-                <option value="2">2 Stars</option>
-                <option value="3">3 Stars</option>
-                <option value="4">4 Stars</option>
-                <option value="5">5 Stars</option>
-              </select>
-            </div>
 
             <div className="form-group">
               <label htmlFor="image">
@@ -525,7 +550,17 @@ export default function AddProduct() {
             </div>
           </div>
         </div>
-      </div>
+        </div>
+      )} {/* end sellerVerified === true */}
+
+      {/* Loading state */}
+      {sellerVerified === null && (
+        <div className="add-product-container">
+          <div className="add-product-content" style={{ textAlign: 'center', padding: '60px' }}>
+            <p style={{ color: '#666' }}>Checking verification status...</p>
+          </div>
+        </div>
+      )}
 
 
       <style jsx>{`

@@ -388,10 +388,7 @@ const Payment = () => {
     }
   };
 
-  // Handle Khalti payment (placeholder)
-  const handleKhaltiPayment = async () => {
-    alert('Khalti payment integration coming soon!');
-  };
+
 
   const { subtotal, totalItems, shipping, tax, total } = calculateTotals();
 
@@ -607,13 +604,7 @@ const Payment = () => {
                   <img src="https://esewa.com.np/common/images/esewa-icon-large.png" alt="eSewa" style={{width: '32px', height: '32px'}} />
                   <div className="method-name">eSewa</div>
                 </div>
-                <div 
-                  className={`payment-method ${selectedPaymentMethod === 'khalti' ? 'selected' : ''}`}
-                  onClick={() => setSelectedPaymentMethod('khalti')}
-                >
-                  <img src="https://khalti.com/static/img/logo1.png" alt="Khalti" style={{width: '32px', height: '32px'}} />
-                  <div className="method-name">Khalti</div>
-                </div>
+
                 <div 
                   className={`payment-method ${selectedPaymentMethod === 'cod' ? 'selected' : ''}`}
                   onClick={() => setSelectedPaymentMethod('cod')}
@@ -700,19 +691,7 @@ const Payment = () => {
                 </div>
               )}
               
-              {selectedPaymentMethod === 'khalti' && (
-                <div className="form-group full-width" style={{textAlign: 'center', padding: '30px 0'}}>
-                  <p>Complete your payment securely with Khalti.</p>
-                  <button 
-                    type="button" 
-                    className="payment-gateway-btn khalti-btn"
-                    onClick={handleKhaltiPayment}
-                  >
-                    <img src="https://khalti.com/static/img/logo1.png" alt="Khalti" style={{width: '24px', height: '24px'}} />
-                    <span>Pay with Khalti</span>
-                  </button>
-                </div>
-              )}
+
               
               {selectedPaymentMethod === 'cod' && (
                 <div className="form-group full-width" style={{textAlign: 'center', padding: '30px 0'}}>
@@ -854,7 +833,7 @@ const Payment = () => {
               </button>
 
               {/* Show payment instructions for gateway methods */}
-              {(selectedPaymentMethod === 'esewa' || selectedPaymentMethod === 'khalti') && (
+              {selectedPaymentMethod === 'esewa' && (
                 <div style={{
                   textAlign: 'center',
                   padding: '20px',
@@ -875,7 +854,7 @@ const Payment = () => {
                     fontSize: '0.9rem',
                     margin: '0'
                   }}>
-                    Click the payment button above to proceed with {selectedPaymentMethod === 'esewa' ? 'eSewa' : 'Khalti'} payment.
+                    Click the payment button above to proceed with eSewa payment.
                   </p>
                 </div>
               )}
@@ -1533,17 +1512,6 @@ const Payment = () => {
         }
 
         .esewa-btn:hover {
-          background-color: #0D4E14;
-          transform: translateY(-2px);
-          box-shadow: 0 8px 25px rgba(27, 94, 32, 0.4);
-        }
-
-        .khalti-btn {
-          background-color: #1B5E20;
-          box-shadow: 0 4px 15px rgba(27, 94, 32, 0.3);
-        }
-
-        .khalti-btn:hover {
           background-color: #0D4E14;
           transform: translateY(-2px);
           box-shadow: 0 8px 25px rgba(27, 94, 32, 0.4);

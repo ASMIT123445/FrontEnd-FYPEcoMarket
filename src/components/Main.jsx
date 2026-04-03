@@ -73,7 +73,7 @@ export default function Main() {
     const [showUserDropdown, setShowUserDropdown] = useState(false);
     const [userLoading, setUserLoading] = useState(true);
     const [showFilters, setShowFilters] = useState(false);
-    const [appliedFilters, setAppliedFilters] = useState({ecoRating: [], stockStatus: [], maxPrice: 2500});
+    const [appliedFilters, setAppliedFilters] = useState({minRating: 0, stockStatus: [], maxPrice: 2500});
     const [wishlistItems, setWishlistItems] = useState([]);
     
     // Seller panel states
@@ -217,13 +217,11 @@ export default function Main() {
                 
                 // Recommended: highest rated products (rating desc)
                 const recommended = [...allProducts]
-                    .sort((a, b) => (b.rating || 0) - (a.rating || 0))
-                    .slice(0, 10);
+                    .sort((a, b) => (b.rating || 0) - (a.rating || 0));
                 
                 // Trending: most recently added (newest first)
                 const trending = [...allProducts]
-                    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-                    .slice(0, 10);
+                    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
                 
                 // New Arrivals: same as trending but offset (next 10 newest)
                 const newArrivals = [...allProducts]
@@ -236,8 +234,7 @@ export default function Main() {
 
                 // Top Seller: lowest price first (best value / most accessible)
                 const topSellers = [...allProducts]
-                    .sort((a, b) => a.price - b.price)
-                    .slice(0, 10);
+                    .sort((a, b) => a.price - b.price);
 
                 setProducts(recentlySorted);
                 setRecommendedProducts(recommended);
@@ -448,6 +445,11 @@ export default function Main() {
         setTimeout(checkScrollButtons, 100);
     }, [recommendedProducts, trendingProducts, newArrivalsProducts, topSellerProducts]);
 
+    const applyFilters = (list) => list
+        .filter(p => appliedFilters.minRating > 0 ? (p.rating || 0) >= appliedFilters.minRating : true)
+        .filter(p => appliedFilters.stockStatus.includes('in_stock') ? p.stock > 0 : true)
+        .filter(p => parseFloat(p.price) <= appliedFilters.maxPrice);
+
     // Render product section component
     const renderProductSection = (title, products, sectionId) => (
         <div className="home-products-container" key={sectionId}>
@@ -519,7 +521,6 @@ export default function Main() {
                                         {product.rating ? product.rating.toFixed(1) : 'No ratings'}
                                     </span>
                                 </div>
-                                <span className="review-count">({product.reviews || 100})</span>
                             </div>
 
                             <div className="price-section">
@@ -700,11 +701,7 @@ export default function Main() {
                         <button className="filter-toggle"
                             onClick={toggleFilters}>
                             <FaFilter/>
-                            Filters {
-                            appliedFilters.ecoRating.length > 0 && `(${
-                                appliedFilters.ecoRating.length
-                            })`
-                        } </button>
+                            Filters {appliedFilters.minRating > 0 && `(${appliedFilters.minRating}★+)`}</button>
 
 
                         {
@@ -734,47 +731,38 @@ export default function Main() {
                                     </div>
                                 </div>
 
+
                                 <div className="filter-section">
                                     <h5>Eco Rating</h5>
                                     <div className="rating-filters">
-                                        {
-                                        [5, 4, 3].map((rating) => (
-                                            <label key={rating}
-                                                className="rating-filter">
-                                                <input type="checkbox"
-                                                    checked={
-                                                        appliedFilters.ecoRating.includes(rating)
-                                                    }
-                                                    onChange={
-                                                        (e) => {
-                                                            if (e.target.checked) {
-                                                                setAppliedFilters(prev => ({
-                                                                    ...prev,
-                                                                    ecoRating: [
-                                                                        ...prev.ecoRating,
-                                                                        rating
-                                                                    ]
-                                                                }));
-                                                            } else {
-                                                                setAppliedFilters(prev => ({
-                                                                    ...prev,
-                                                                    ecoRating: prev.ecoRating.filter(r => r !== rating)
-                                                                }));
-                                                            }
-                                                        }
-                                                    }/>
+                                        {[5, 4, 3].map((rating) => (
+                                            <label key={rating} className="rating-filter">
+                                                <input
+                                                    type="radio"
+                                                    name="ecoRating"
+                                                    checked={appliedFilters.minRating === rating}
+                                                    onChange={() => setAppliedFilters(prev => ({
+                                                        ...prev,
+                                                        minRating: prev.minRating === rating ? 0 : rating
+                                                    }))}
+                                                />
                                                 <span className="stars">
-                                                    {
-                                                    Array(rating).fill().map((_, i) => (
-                                                        <FaStar key={i}
-                                                            className="star small"/>
-                                                    ))
-                                                }
+                                                    {Array(rating).fill().map((_, i) => (
+                                                        <FaStar key={i} className="star small"/>
+                                                    ))}
                                                     <span className="rating-text">& up</span>
                                                 </span>
                                             </label>
-                                        ))
-                                    } </div>
+                                        ))}
+                                        {appliedFilters.minRating > 0 && (
+                                            <button
+                                                style={{fontSize:'0.8rem', color:'#888', background:'none', border:'none', cursor:'pointer', padding:'4px 0'}}
+                                                onClick={() => setAppliedFilters(prev => ({...prev, minRating: 0}))}
+                                            >
+                                                Clear rating
+                                            </button>
+                                        )}
+                                    </div>
                                 </div>
 
                                 <div className="filter-section">
@@ -819,7 +807,7 @@ export default function Main() {
                                     <button className="btn-clear"
                                         onClick={
                                             () => {
-                                                setAppliedFilters({ecoRating: [], stockStatus: [], maxPrice: 2500});
+                                                setAppliedFilters({minRating: 0, stockStatus: [], maxPrice: 2500});
                                                 setPriceRange(2500);
                                             }
                                     }>
@@ -847,8 +835,8 @@ export default function Main() {
                 </div>
 
                 {/* Multiple Product Sections */}
-                {renderProductSection("Recommended for you", recommendedProducts, "recommended")}
-                {renderProductSection("Trending Now", trendingProducts, "trending")}
+                {renderProductSection("Recommended for you", applyFilters(recommendedProducts), "recommended")}
+                {renderProductSection("Trending Now", applyFilters(trendingProducts), "trending")}
                 {/* {renderProductSection("New Arrivals", newArrivalsProducts, "new-arrivals")} */}
 
                 {/* Products Grid with Horizontal Scroll */}
@@ -879,7 +867,7 @@ export default function Main() {
                     <div className="home-products-etsy-grid"
                         ref={productsScrollRef}>
                         {
-                        products.map((product) => (
+                        applyFilters(products).map((product) => (
                             <div className="home-etsy-product-card"
                                 key={
                                     product.id
@@ -951,9 +939,6 @@ export default function Main() {
                                                 product.rating ? product.rating.toFixed(1) : 'No ratings'
                                             }</span>
                                         </div>
-                                        <span className="review-count">({
-                                            product.reviews || 0
-                                        })</span>
                                     </div>
 
                                     <div className="price-section">
@@ -1022,7 +1007,7 @@ export default function Main() {
                     <div className="home-products-etsy-grid"
                         ref={productsScrollRef}>
                         {
-                        topSellerProducts.map((product) => (
+                        applyFilters(topSellerProducts).map((product) => (
                             <div className="home-etsy-product-card"
                                 key={
                                     product.id
@@ -1094,9 +1079,6 @@ export default function Main() {
                                                 product.rating ? product.rating.toFixed(1) : 'No ratings'
                                             }</span>
                                         </div>
-                                        <span className="review-count">({
-                                            product.reviews || 0
-                                        })</span>
                                     </div>
 
                                     <div className="price-section">

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { FaArrowLeft, FaCheckCircle, FaClock, FaTimesCircle } from 'react-icons/fa';
+import { FaArrowLeft, FaCheckCircle, FaClock, FaTimesCircle, FaBan } from 'react-icons/fa';
 import Header from './Header';
 import '../styles/OrderTracking.css';
 
@@ -21,6 +21,7 @@ const OrderTracking = () => {
   const [trackingData, setTrackingData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [cancelling, setCancelling] = useState(false);
 
   useEffect(() => {
     const fetchTracking = async () => {
@@ -39,6 +40,34 @@ const OrderTracking = () => {
     };
     fetchTracking();
   }, [orderId]);
+
+  const handleCancel = async () => {
+    if (!window.confirm('Are you sure you want to cancel this order?')) return;
+    setCancelling(true);
+    try {
+      const res = await fetch(`http://127.0.0.1:8000/api/orders/${orderId}/cancel/`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('access')}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to cancel order');
+      setTrackingData(prev => ({
+        ...prev,
+        current_status: 'cancelled',
+        status_history: [
+          { status: 'cancelled', note: 'Cancelled by customer', changed_at: new Date().toISOString() },
+          ...(prev.status_history || [])
+        ]
+      }));
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setCancelling(false);
+    }
+  };
 
   const getStepIndex = (status) => {
     if (status === 'cancelled') return -1;
@@ -119,6 +148,31 @@ const OrderTracking = () => {
           )}
           <div className="info-row"><span>Ordered On</span><span>{formatDate(trackingData.created_at)}</span></div>
         </div>
+
+        {/* Cancel Order Button */}
+        {['pending', 'confirmed'].includes(trackingData.current_status) && (
+          <button
+            className="btn-cancel-order"
+            onClick={handleCancel}
+            disabled={cancelling}
+          >
+            <FaBan /> {cancelling ? 'Cancelling...' : 'Cancel Order'}
+          </button>
+        )}
+
+        {/* Chat with Seller Button */}
+        <button
+          style={{
+            marginTop: '12px', width: '100%', padding: '12px',
+            background: '#1B5E20', color: 'white', border: 'none',
+            borderRadius: '10px', fontSize: '1rem', fontWeight: 600,
+            cursor: 'pointer', display: 'flex', alignItems: 'center',
+            justifyContent: 'center', gap: '8px'
+          }}
+          onClick={() => navigate(`/chat/${orderId}`)}
+        >
+          💬 Chat with Seller
+        </button>
 
         {/* Status History Timeline */}
         {trackingData.status_history?.length > 0 && (

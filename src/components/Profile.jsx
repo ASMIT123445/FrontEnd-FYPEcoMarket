@@ -306,6 +306,30 @@ const Profile = () => {
                                 )}
                             </div>
 
+                            {/* Seller verification status */}
+                            {user?.role === 'seller' && (
+                                <div className="detail-row">
+                                    <label>Verification Status</label>
+                                    {user?.is_verified === true ? (
+                                        <span style={{
+                                            display: 'inline-flex', alignItems: 'center', gap: '6px',
+                                            background: '#e8f5e9', color: '#2E7D32',
+                                            padding: '4px 12px', borderRadius: '20px', fontWeight: 600, fontSize: '0.9rem'
+                                        }}>
+                                            ✅ Verified
+                                        </span>
+                                    ) : (
+                                        <span style={{
+                                            display: 'inline-flex', alignItems: 'center', gap: '6px',
+                                            background: '#fff3e0', color: '#e65100',
+                                            padding: '4px 12px', borderRadius: '20px', fontWeight: 600, fontSize: '0.9rem'
+                                        }}>
+                                            ⏳ Unverified — Pending admin approval
+                                        </span>
+                                    )}
+                                </div>
+                            )}
+
                             <div className="detail-row">
                                 <label>Address</label>
                                 {editing ? (

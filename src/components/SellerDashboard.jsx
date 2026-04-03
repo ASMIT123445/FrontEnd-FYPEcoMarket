@@ -415,6 +415,7 @@ const SellerDashboard = () => {
                                                 <th>Total</th>
                                                 <th>Order Status</th>
                                                 <th>Payment Status</th>
+                                                <th>Chat</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -452,6 +453,14 @@ const SellerDashboard = () => {
                                                             <option value="completed">Completed</option>
                                                             <option value="failed">Failed</option>
                                                         </select>
+                                                    </td>
+                                                    <td>
+                                                        <button
+                                                            onClick={() => navigate(`/chat/${order.id}`)}
+                                                            style={{ background: '#2E7D32', color: 'white', border: 'none', borderRadius: '6px', padding: '6px 12px', cursor: 'pointer', fontSize: '0.85rem' }}
+                                                        >
+                                                            💬 Chat
+                                                        </button>
                                                     </td>
                                                 </tr>
                                             ))}
