@@ -1,64 +1,84 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { 
-    FaCheckCircle, FaHome, FaShoppingCart, FaLeaf, FaCalendarAlt, 
+    FaCheckCircle, FaTimesCircle, FaHome, FaShoppingCart, FaLeaf, FaCalendarAlt, 
     FaHashtag, FaRupeeSign, FaBox, FaChevronRight 
 } from 'react-icons/fa';
 import Header from './Header';
 import { getUserFromToken } from '../utils/auth';
 import { getImageUrl, handleImageError } from '../utils/imageHelper';
 import '../styles/ShoppingCart.css';
+import Footer from './Footer';
 
 const OrderConfirmation = () => {
     const navigate = useNavigate();
     const location = useLocation();
+    const [searchParams] = useSearchParams();
     const [order, setOrder] = useState(null);
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [paymentFailed, setPaymentFailed] = useState(false);
 
     useEffect(() => {
         const initializeOrder = async () => {
             const userInfo = getUserFromToken();
             setUser(userInfo);
 
-            // Get order data from location state or create new order
+            // Case 1: Khalti / eSewa callback via URL params
+            const orderId = searchParams.get('order_id');
+            const status = searchParams.get('status');
+
+            if (orderId) {
+                if (status === 'failed') {
+                    setPaymentFailed(true);
+                    setLoading(false);
+                    return;
+                }
+                // Fetch the order from the API
+                try {
+                    const res = await fetch(`http://127.0.0.1:8000/api/orders/${orderId}/track/`, {
+                        headers: {
+                            'Authorization': `Bearer ${localStorage.getItem('access')}`,
+                            'Content-Type': 'application/json',
+                        },
+                    });
+                    if (res.ok) {
+                        const data = await res.json();
+                        // Build a minimal order object compatible with the UI
+                        setOrder({
+                            id: data.order_id,
+                            status: data.current_status,
+                            total_amount: data.total_amount,
+                            created_at: data.created_at,
+                            payment_method: data.payment_method,
+                            points_earned: 0,
+                            points_redeemed: 0,
+                            points_discount: 0,
+                            items: [],
+                        });
+                    } else {
+                        setPaymentFailed(true);
+                    }
+                } catch {
+                    setPaymentFailed(true);
+                }
+                setLoading(false);
+                return;
+            }
+
+            // Case 2: Navigated directly with order in location.state (COD / card)
             if (location.state?.order) {
                 setOrder(location.state.order);
                 setLoading(false);
-            } else {
-                // If no order data, try to create order from cart
-                await createOrderFromCart();
+                return;
             }
+
+            // Case 3: No order data at all — redirect to cart
+            navigate('/cart');
         };
 
         initializeOrder();
-    }, [location.state]);
-
-    const createOrderFromCart = async () => {
-        try {
-            const response = await fetch('http://127.0.0.1:8000/api/orders/create/', {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('access')}`,
-                    'Content-Type': 'application/json'
-                }
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-                setOrder(data.order);
-            } else {
-                console.error('Error creating order:', response.statusText);
-                // Redirect to cart if order creation fails
-                navigate('/cart');
-            }
-        } catch (error) {
-            console.error('Error creating order:', error);
-            navigate('/cart');
-        } finally {
-            setLoading(false);
-        }
-    };
+    }, []);
 
     const formatDate = (dateString) => {
         return new Date(dateString).toLocaleDateString('en-US', {
@@ -91,6 +111,26 @@ const OrderConfirmation = () => {
                         <p>Processing your order...</p>
                     </div>
                 </div>
+            </div>
+        );
+    }
+
+    if (paymentFailed) {
+        return (
+            <div className="shopping-cart-page">
+                <Header showBackButton={false} />
+                <div className="container">
+                    <div className="empty-cart" style={{ color: '#c62828' }}>
+                        <FaTimesCircle style={{ fontSize: '5rem', color: '#c62828', marginBottom: 20 }} />
+                        <h2>Payment Failed</h2>
+                        <p>Your payment was not completed. No charges were made.</p>
+                        <button onClick={() => navigate('/checkout')} className="btn-shop" style={{ marginTop: 20 }}>
+                            <FaShoppingCart />
+                            <span>Try Again</span>
+                        </button>
+                    </div>
+                </div>
+                <Footer />
             </div>
         );
     }
@@ -174,8 +214,9 @@ const OrderConfirmation = () => {
                         <div className="order-items-section">
                             <h3>
                                 <FaBox />
-                                Items Ordered ({order.items.length} {order.items.length === 1 ? 'item' : 'items'})
+                                Items Ordered {order.items?.length > 0 && `(${order.items.length} ${order.items.length === 1 ? 'item' : 'items'})`}
                             </h3>
+                            {order.items?.length > 0 ? (
                             <div className="confirmed-items">
                                 {order.items.map(item => (
                                     <div key={item.id} className="confirmed-item">
@@ -198,6 +239,11 @@ const OrderConfirmation = () => {
                                     </div>
                                 ))}
                             </div>
+                            ) : (
+                                <p style={{ color: '#888', fontSize: '0.9rem' }}>
+                                    Your items are being processed. Check your order history for details.
+                                </p>
+                            )}
                         </div>
 
                         {/* Order Total */}
@@ -250,6 +296,7 @@ const OrderConfirmation = () => {
                     </div>
                 </div>
             </div>
+            <Footer />
         </div>
     );
 };

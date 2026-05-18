@@ -14,6 +14,7 @@ import {
   FaArrowLeft
 } from "react-icons/fa";
 import { FaGoogle } from "react-icons/fa";
+import { useGoogleLogin } from '@react-oauth/google';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -74,15 +75,6 @@ export default function Login() {
       newErrors.password = "Password must be at least 6 characters";
     }
 
-    // Check if remember me is checked (mandatory)
-    if (!remember) {
-      setMessage({ 
-        type: "error", 
-        text: "Please check 'Remember me' to continue" 
-      });
-      return;
-    }
-
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
@@ -125,6 +117,31 @@ export default function Login() {
       setLoading(false);
     }
   };
+
+  // Google OAuth handler — uses credential flow (one-tap / popup)
+  const handleGoogleSuccess = async (tokenResponse) => {
+    try {
+      setLoading(true);
+      const res = await axios.post('http://127.0.0.1:8000/api/auth/google-login/', {
+        access_token: tokenResponse.access_token,
+      });
+
+      localStorage.setItem('access', res.data.access);
+      localStorage.setItem('refresh', res.data.refresh);
+      setMessage({ type: 'success', text: 'Signed in with Google! Redirecting...' });
+      setTimeout(() => navigate('/main'), 1200);
+    } catch (err) {
+      console.error('Google login error:', err);
+      setMessage({ type: 'error', text: 'Google sign-in failed. Please try again.' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const googleLogin = useGoogleLogin({
+    onSuccess: handleGoogleSuccess,
+    onError: () => setMessage({ type: 'error', text: 'Google sign-in was cancelled.' }),
+  });
 
   return (
     <div className="login-page">
@@ -214,7 +231,7 @@ export default function Login() {
                   checked={formData.remember}
                   onChange={handleInputChange}
                 />
-                <label htmlFor="remember">Remember me *</label>
+                <label htmlFor="remember">Remember me</label>
               </div>
               <Link to="/forgot-password" className="forgot-password">
                 Forgot Password?
@@ -238,9 +255,9 @@ export default function Login() {
 
             {/* Social Login */}
             <div className="social-login">
-              <button type="button" className="btn-social btn-google">
+              <button type="button" className="btn-social btn-google" onClick={() => googleLogin()}>
                 <FaGoogle />
-                <span>Google</span>
+                <span>Continue with Google</span>
               </button>
             </div>
 

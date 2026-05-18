@@ -6,6 +6,8 @@ import { cartService } from '../services/cartService';
 import { wishlistService } from '../services/wishlistService';
 import { getImageUrl, handleImageError } from '../utils/imageHelper';
 import Header from './Header';
+import ProductCard from './ProductCard';
+import Footer from './Footer';
 import '../styles/ProductDetail.css';
 import '../styles/Header.css';
 
@@ -432,15 +434,34 @@ const ProductDetail = () => {
 
           {/* Product Details */}
           <div className="product-details">
-            <div className="category">Eco-Friendly Product</div>
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '14px' }}>
+              <div className="category">🌿 Eco-Friendly</div>
+              {product.eco_category_detail && (
+                <div className="category" style={{ background: '#e3f2fd', color: '#1565c0' }}>
+                  {product.eco_category_detail.name}
+                </div>
+              )}
+              {product.product_category_detail && (
+                <div className="category" style={{ background: '#fce4ec', color: '#880e4f' }}>
+                  {product.product_category_detail.name}
+                </div>
+              )}
+            </div>
             <h1 className="product-title">{product.name}</h1>
+
+            {/* Seller */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '14px', color: '#555', fontSize: '0.88rem' }}>
+              <span style={{ background: '#f5f5f5', padding: '4px 12px', borderRadius: '20px', fontWeight: 600 }}>
+                🏪 {product.seller_name || 'Ecomarket Seller'}
+              </span>
+            </div>
             
             <div className="rating">
               <div className="stars">
-                {renderStars(averageRating || product.rating || 4.5)}
+                {renderStars(averageRating || product.rating || 0)}
               </div>
               <span className="rating-text">
-                {averageRating || product.rating || 4.5} ({ratingCount} reviews)
+                {averageRating ? averageRating.toFixed(1) : (product.rating || 0)} ({ratingCount} review{ratingCount !== 1 ? 's' : ''})
               </span>
             </div>
             
@@ -456,7 +477,7 @@ const ProductDetail = () => {
             
             <div className="stock">
               <i className="fas fa-check-circle"></i>
-              <span>In Stock - {product.stock || 0} items available</span>
+              <span>{product.stock > 0 ? `${product.stock} items in stock` : 'Out of stock'}</span>
             </div>
             
             <div className="description">
@@ -464,10 +485,10 @@ const ProductDetail = () => {
             </div>
             
             <ul className="features">
-              <li><FaLeaf style={{color: '#2E7D32'}} /> Eco-friendly and sustainable</li>
-              <li><FaShieldAlt style={{color: '#2E7D32'}} /> High quality materials</li>
-              <li><FaRecycle style={{color: '#2E7D32'}} /> Environmentally conscious</li>
-              <li><FaTruck style={{color: '#2E7D32'}} /> Fast and secure delivery</li>
+              <li><FaLeaf /> Eco-friendly and sustainable</li>
+              <li><FaShieldAlt /> High quality materials</li>
+              <li><FaRecycle /> Environmentally conscious</li>
+              <li><FaTruck /> Fast and secure delivery</li>
             </ul>
             
             {/* Add to Cart Section */}
@@ -624,32 +645,13 @@ const ProductDetail = () => {
             <FaChevronLeft />
           </button>
           
-          <div className="products-grid-scroll" ref={similarProductsScrollRef}>
-            {similarProducts.map((similarProduct) => (
-              <div key={similarProduct.id} className="product-card">
-                <div className="product-card-img" onClick={() => navigate(`/product/${similarProduct.id}`)}>
-                  <img 
-                    src={getImageUrl(similarProduct.image_url, similarProduct.image)} 
-                    alt={similarProduct.name}
-                    onError={handleImageError}
-                  />
-                </div>
-                <div className="product-card-content">
-                  <h3 className="product-card-title" onClick={() => navigate(`/product/${similarProduct.id}`)}>{similarProduct.name}</h3>
-                  <div className="product-card-price">
-                    <span className="product-card-current">Rs {Math.round(similarProduct.price)}</span>
-                    {similarProduct.oldPrice && (
-                      <span className="product-card-old">Rs {Math.round(similarProduct.oldPrice)}</span>
-                    )}
-                  </div>
-                  <button 
-                    className="add-to-cart-btn"
-                    onClick={() => addProductToCart(similarProduct, similarProduct.name)}
-                  >
-                    <i className="fas fa-cart-plus"></i>
-                    Add to Cart
-                  </button>
-                </div>
+          <div className="products-grid-scroll" ref={similarProductsScrollRef} style={{ display: 'flex', gap: 16, overflowX: 'auto', padding: '10px 0', scrollbarWidth: 'none' }}>
+            {similarProducts.map(similarProduct => (
+              <div key={similarProduct.id} style={{ flex: '0 0 220px', minWidth: 220 }}>
+                <ProductCard
+                  product={similarProduct}
+                  onWishlistToggle={() => {}}
+                />
               </div>
             ))}
           </div>
@@ -665,11 +667,7 @@ const ProductDetail = () => {
       </div>
 
       {/* Footer */}
-      <div className="footer">
-        <div className="container">
-          <p>&copy; 2026 Ecomarket. All rights reserved. | Sustainable shopping for a better planet.</p>
-        </div>
-      </div>
+      <Footer />
     </div>
   );
 };

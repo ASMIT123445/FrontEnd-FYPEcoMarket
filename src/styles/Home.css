@@ -26,6 +26,15 @@
     padding: 0 10px;
 }
 
+/* Make the header inner container match the main content width */
+.home-container .header1 .container,
+.home-container .categories-nav .home-main-container {
+    width: 95%;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 10px;
+}
+
 /* Header and Navigation Styles */
 .header1 {
     background: var(--white);
@@ -515,6 +524,39 @@
     border-color: var(--text-gray);
 }
 
+/* Eco Category Chips in Filter Panel */
+.eco-category-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 4px;
+}
+
+.eco-chip {
+    padding: 5px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    background: var(--white);
+    color: var(--text-dark);
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+
+.eco-chip:hover {
+    border-color: var(--primary-green);
+    color: var(--primary-green);
+    background: rgba(46, 125, 50, 0.05);
+}
+
+.eco-chip.active {
+    background: var(--primary-green);
+    color: var(--white);
+    border-color: var(--primary-green);
+}
+
 /* Section Heading */
 .section-heading {
     margin: 30px 0 20px 0;
@@ -551,21 +593,331 @@
     color: white;
 }
 
-.sort-options {
+/* ── Page Layout: Sidebar + Content ───────────────────────── */
+.page-layout {
+    display: grid;
+    grid-template-columns: 240px 1fr;
+    gap: 24px;
+    align-items: stretch;   /* both columns stretch to the same height */
+    padding: 20px 0 40px;
+}
+
+/* ── Filter Sidebar ────────────────────────────────────────── */
+.filter-sidebar {
+    background: var(--white);
+    border: 1px solid var(--border-color);
+    border-radius: 14px;
+    padding: 20px;
+    /* stretch to match content column height */
+    align-self: stretch;
+    /* inner scroll when content is taller than viewport */
+    position: sticky;
+    top: 130px;
+    max-height: calc(100vh - 150px);
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-color) transparent;
+}
+
+.filter-sidebar::-webkit-scrollbar {
+    width: 4px;
+}
+.filter-sidebar::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 4px;
+}
+
+.sidebar-header {
     display: flex;
     align-items: center;
     gap: 8px;
+    margin-bottom: 20px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.sidebar-header h3 {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text-dark);
+    flex: 1;
+}
+
+.sidebar-header-icon {
+    color: var(--primary-green);
     font-size: 14px;
 }
 
-.sort-options select {
-    padding: 8px 12px;
-    border: 1px solid var(--border-color);
+.sidebar-clear-btn {
+    background: none;
+    border: none;
+    color: var(--primary-green);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 0;
+    text-decoration: underline;
+    white-space: nowrap;
+}
+
+.sidebar-section {
+    margin-bottom: 22px;
+    padding-bottom: 22px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.sidebar-section:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+
+.sidebar-section h5 {
+    margin: 0 0 12px;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-dark);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Eco category radio list */
+.sidebar-eco-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.sidebar-eco-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    font-size: 13px;
+    color: var(--text-dark);
+    padding: 4px 6px;
     border-radius: 6px;
+    transition: background 0.15s;
+}
+
+.sidebar-eco-item:hover {
+    background: rgba(46, 125, 50, 0.06);
+}
+
+.sidebar-eco-item input[type="radio"] {
+    accent-color: var(--primary-green);
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+}
+
+.sidebar-eco-item span {
+    line-height: 1.3;
+}
+
+/* ── Content Area ──────────────────────────────────────────── */
+.content-area {
+    min-width: 0; /* prevent overflow in grid */
+}
+
+.content-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 0 14px;
+    border-bottom: 1px solid var(--border-color);
+    margin-bottom: 4px;
+}
+
+.product-count {
+    font-size: 14px;
+    color: var(--text-light);
+    font-weight: 500;
+}
+
+/* Products grid for ViewAll */
+.products-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 20px;
+    padding: 10px 0 30px;
+}
+
+/* ── Responsive ────────────────────────────────────────────── */
+@media (max-width: 900px) {
+    .page-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .filter-sidebar {
+        position: static;
+        max-height: none;
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0 20px;
+        border-radius: 10px;
+    }
+
+    .sidebar-header {
+        grid-column: 1 / -1;
+    }
+}
+
+@media (max-width: 576px) {
+    .filter-sidebar {
+        grid-template-columns: 1fr;
+    }
+}
+
+
+/* ── See More / See Less text links ───────────────────────── */
+.see-more-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 0 4px;
+    border-top: 1px solid var(--border-color);
+    margin-top: 8px;
+}
+
+.see-more-count {
+    font-size: 13px;
+    color: var(--text-light);
+}
+
+.see-more-link {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--primary-green);
+    cursor: pointer;
+    position: relative;
+    padding-bottom: 1px;
+    transition: color 0.2s;
+}
+
+.see-more-link::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 0;
+    height: 1.5px;
+    background: var(--primary-green);
+    transition: width 0.25s ease;
+}
+
+.see-more-link:hover {
+    color: var(--dark-green);
+}
+
+.see-more-link:hover::after {
+    width: 100%;
+}
+
+
+.sort-dropdown {
+    position: relative;
+}
+
+.sort-dropdown-trigger {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 9px 14px;
     background: var(--white);
+    border: 1.5px solid var(--border-color);
+    border-radius: 24px;
+    cursor: pointer;
+    font-size: 14px;
+    color: var(--text-dark);
+    transition: border-color 0.2s, box-shadow 0.2s;
+    white-space: nowrap;
+    user-select: none;
+}
+
+.sort-dropdown-trigger:hover,
+.sort-dropdown-trigger.open {
+    border-color: var(--primary-green);
+    box-shadow: 0 0 0 3px rgba(46, 125, 50, 0.08);
+}
+
+.sort-icon {
+    color: var(--primary-green);
+    font-size: 13px;
+    flex-shrink: 0;
+}
+
+.sort-label {
+    font-size: 13px;
+    color: var(--text-light);
+}
+
+.sort-value {
+    font-weight: 600;
+    color: var(--text-dark);
+}
+
+.sort-chevron {
+    font-size: 11px;
+    color: var(--text-light);
+    margin-left: 2px;
+    transition: transform 0.2s;
+}
+
+.sort-chevron.rotated {
+    transform: rotate(180deg);
+}
+
+.sort-dropdown-menu {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    background: var(--white);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+    min-width: 200px;
+    z-index: 1100;
+    overflow: hidden;
+    animation: sortMenuIn 0.15s ease;
+}
+
+@keyframes sortMenuIn {
+    from { opacity: 0; transform: translateY(-6px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.sort-dropdown-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: 11px 16px;
+    background: none;
+    border: none;
+    text-align: left;
     font-size: 14px;
     color: var(--text-dark);
     cursor: pointer;
+    transition: background 0.15s;
+}
+
+.sort-dropdown-item:hover {
+    background: rgba(46, 125, 50, 0.06);
+    color: var(--primary-green);
+}
+
+.sort-dropdown-item.active {
+    background: rgba(46, 125, 50, 0.08);
+    color: var(--primary-green);
+    font-weight: 600;
+}
+
+.sort-check {
+    font-size: 12px;
+    color: var(--primary-green);
+    flex-shrink: 0;
 }
 
 /* Horizontal Scrollable Products Row - Updated */

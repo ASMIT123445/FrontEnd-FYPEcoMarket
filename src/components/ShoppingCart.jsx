@@ -7,6 +7,9 @@ import { getImageUrl, handleImageError } from '../utils/imageHelper';
 import Header from './Header';
 import '../styles/ShoppingCart.css';
 import '../styles/Header.css';
+import Footer from './Footer';
+import { showToast } from './Toast';
+import { showConfirm } from './Toast';
 
 const ShoppingCart = () => {
   const navigate = useNavigate();
@@ -17,6 +20,8 @@ const ShoppingCart = () => {
   const [user, setUser] = useState(null);
   const [showMessage, setShowMessage] = useState('');
   const [showHistory, setShowHistory] = useState(false);
+  const [visibleOrders, setVisibleOrders] = useState(5);
+  const ORDER_PAGE_SIZE = 5;
 
   // Initialize user and fetch cart
   useEffect(() => {
@@ -167,28 +172,22 @@ const ShoppingCart = () => {
 
   // Remove from cart
   const handleRemoveFromCart = async (itemId) => {
-    if (!window.confirm('Are you sure you want to remove this item from your cart?')) {
-      return;
-    }
-    
-    try {
-      // Remove item using Django API
-      await cartService.removeFromCart(itemId);
-      
-      // Update local state
-      const updatedItems = cartItems.filter(item => item.id !== itemId);
-      setCartItems(updatedItems);
-      displayMessage('Item removed from cart');
-    } catch (error) {
-      console.error('Error removing item:', error);
-      displayMessage('Error removing item. Please try again.');
-    }
+    showConfirm('Remove this item from your cart?', async () => {
+      try {
+        await cartService.removeFromCart(itemId);
+        setCartItems(prev => prev.filter(item => item.id !== itemId));
+        displayMessage('Item removed from cart');
+      } catch (error) {
+        console.error('Error removing item:', error);
+        displayMessage('Error removing item. Please try again.');
+      }
+    });
   };
 
   // Proceed to checkout
   const proceedToCheckout = () => {
     if (cartItems.length === 0) {
-      alert('Your cart is empty. Add some eco-friendly products first!');
+      showToast('Your cart is empty. Add some eco-friendly products first!', 'warning');
       return;
     }
     
@@ -397,7 +396,7 @@ const ShoppingCart = () => {
                 </div>
               ) : (
                 <div className="history-list">
-                  {orderHistory.map(order => (
+                  {orderHistory.slice(0, visibleOrders).map(order => (
                     <div key={order.id} className="history-item">
                       <div className="order-header">
                         <div className="order-info">
@@ -450,6 +449,30 @@ const ShoppingCart = () => {
                       </div>
                     </div>
                   ))}
+
+                  {/* See More / See Less — text link, right-aligned */}
+                  {orderHistory.length > ORDER_PAGE_SIZE && (
+                    <div className="see-more-row">
+                      <span className="see-more-count">
+                        Showing {Math.min(visibleOrders, orderHistory.length)} of {orderHistory.length} orders
+                      </span>
+                      {visibleOrders < orderHistory.length ? (
+                        <span
+                          className="see-more-link"
+                          onClick={() => setVisibleOrders(v => v + ORDER_PAGE_SIZE)}
+                        >
+                          See more
+                        </span>
+                      ) : (
+                        <span
+                          className="see-more-link"
+                          onClick={() => setVisibleOrders(ORDER_PAGE_SIZE)}
+                        >
+                          See less
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -457,58 +480,7 @@ const ShoppingCart = () => {
         </div>
       </div>
 
-      {/* Footer */}
-      <footer>
-        <div className="container">
-          <div className="footer-content">
-            <div className="footer-column">
-              <h3>Ecomarket</h3>
-              <p>Your trusted marketplace for sustainable, eco-friendly products. Making green shopping accessible to everyone.</p>
-              <div className="social-icons">
-                <a href="#"><i className="fab fa-facebook-f"></i></a>
-                <a href="#"><i className="fab fa-twitter"></i></a>
-                <a href="#"><i className="fab fa-instagram"></i></a>
-                <a href="#"><i className="fab fa-linkedin-in"></i></a>
-              </div>
-            </div>
-            
-            <div className="footer-column">
-              <h3>Quick Links</h3>
-              <ul className="footer-links">
-                <li><Link to="/main">Home</Link></li>
-                <li><Link to="/main#categories">Shop</Link></li>
-                <li><a href="#">Categories</a></li>
-                <li><a href="#">About Us</a></li>
-                <li><a href="#">Contact</a></li>
-              </ul>
-            </div>
-            
-            <div className="footer-column">
-              <h3>Categories</h3>
-              <ul className="footer-links">
-                <li><a href="#">Recycled Items</a></li>
-                <li><a href="#">Organic Products</a></li>
-                <li><a href="#">Energy-Efficient</a></li>
-                <li><a href="#">Reusable Household</a></li>
-                <li><a href="#">Handmade Crafts</a></li>
-              </ul>
-            </div>
-
-            <div className="footer-column">
-              <h3>Contact Us</h3>
-              <ul className="footer-links">
-                <li><i class="fas fa-map-marker-alt"></i>Bhagwati Marg, Naxal</li>
-                        <li><i class="fas fa-phone"></i> + 977 9876543210</li>
-                        <li><i class="fas fa-envelope"></i> info@ecomarket.com</li>
-              </ul>
-            </div>
-          </div>
-          
-          <div className="copyright">
-            <p>&copy; 2026 Ecomarket. All rights reserved. | Designed with <i className="fas fa-heart" style={{color:'#ff6b6b'}}></i> for a sustainable future.</p>
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 };

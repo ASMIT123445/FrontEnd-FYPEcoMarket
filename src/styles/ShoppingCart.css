@@ -25,8 +25,8 @@
 }
 
 .container {
-  width: 90%;
-  max-width: 1200px;
+  width: 95%;
+  max-width: 1400px;
   margin: 0 auto;
   padding: 0 15px;
 }
@@ -632,6 +632,50 @@ footer {
   border-radius: 8px;
   font-size: 0.8rem;
   font-weight: 600;
+}
+
+/* See More / See Less text links */
+.see-more-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 0 4px;
+    border-top: 1px solid var(--border-color, #e8ecf0);
+    margin-top: 8px;
+}
+
+.see-more-count {
+    font-size: 13px;
+    color: var(--text-light);
+}
+
+.see-more-link {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--primary-green);
+    cursor: pointer;
+    position: relative;
+    padding-bottom: 1px;
+    transition: color 0.2s;
+}
+
+.see-more-link::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 0;
+    height: 1.5px;
+    background: var(--primary-green);
+    transition: width 0.25s ease;
+}
+
+.see-more-link:hover {
+    color: var(--dark-green);
+}
+
+.see-more-link:hover::after {
+    width: 100%;
 }
 
 /* Responsive Design for Purchase History */

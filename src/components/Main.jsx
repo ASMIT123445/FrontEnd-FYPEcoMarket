@@ -1,5 +1,5 @@
 import {useEffect, useState, useRef} from "react";
-import {Link, useNavigate} from "react-router-dom";
+import {Link, useNavigate, useSearchParams} from "react-router-dom";
 import {
     FaLeaf,
     FaTruck,
@@ -47,13 +47,18 @@ import {
 } from "react-icons/fa";
 import {logout, getUserFromToken} from "../utils/auth";
 import {cartService} from "../services/cartService";
+import Footer from './Footer';
+import ProductCard from './ProductCard';
 import {wishlistService} from "../services/wishlistService";
 import axiosInstance from "../services/axiosInstance";
 import {getImageUrl, handleImageError} from "../utils/imageHelper";
 import "../styles/Home.css";
+import { showToast, showConfirm } from './Toast';
+import SortDropdown from './SortDropdown';
 
 export default function Main() {
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
     const [products, setProducts] = useState([]);
     const [recommendedProducts, setRecommendedProducts] = useState([]);
     const [trendingProducts, setTrendingProducts] = useState([]);
@@ -66,14 +71,18 @@ export default function Main() {
     const [sortBy, setSortBy] = useState("featured");
     const [selectedCategory, setSelectedCategory] = useState("");
     const [selectedEcoCategory, setSelectedEcoCategory] = useState("");
-    const [selectedProductCategory, setSelectedProductCategory] = useState("");
+    const [selectedProductCategory, setSelectedProductCategory] = useState(() => {
+        // Will be updated from searchParams in useEffect
+        return "";
+    });
     const [ecoCategories, setEcoCategories] = useState([]);
     const [productCategories, setProductCategories] = useState([]);
     const [user, setUser] = useState(null);
     const [showUserDropdown, setShowUserDropdown] = useState(false);
     const [userLoading, setUserLoading] = useState(true);
     const [showFilters, setShowFilters] = useState(false);
-    const [appliedFilters, setAppliedFilters] = useState({minRating: 0, stockStatus: [], maxPrice: 2500});
+    const [minRating, setMinRating] = useState(0);
+    const [inStockOnly, setInStockOnly] = useState(false);
     const [wishlistItems, setWishlistItems] = useState([]);
     
     // Seller panel states
@@ -81,6 +90,14 @@ export default function Main() {
     const [sellerTab, setSellerTab] = useState('products'); // 'products' or 'orders'
     const [sellerProducts, setSellerProducts] = useState([]);
     const [sellerOrders, setSellerOrders] = useState([]);
+
+    // Sync category from URL params (e.g. from footer links)
+    useEffect(() => {
+        const cat = searchParams.get('category');
+        const ecoCat = searchParams.get('eco_category');
+        if (cat) setSelectedProductCategory(cat);
+        if (ecoCat) setSelectedCategory(ecoCat);
+    }, [searchParams]);
 
     // Fetch eco categories on component mount
     useEffect(() => {
@@ -150,7 +167,7 @@ export default function Main() {
         const justRegistered = localStorage.getItem('justRegistered');
         if (justRegistered) {
             setTimeout(() => {
-                alert('Welcome to Ecomarket! Start exploring our eco-friendly products.');
+                showToast('Welcome to Ecomarket! Start exploring our eco-friendly products.', 'success');
                 localStorage.removeItem('justRegistered');
             }, 500);
         }
@@ -285,16 +302,16 @@ export default function Main() {
     }, [user, showSellerPanel, sellerTab]);
 
     const handleDeleteProduct = async (productId, productName) => {
-        if (!window.confirm(`Delete "${productName}"?`)) return;
-        
-        try {
-            await axiosInstance.delete(`/products/${productId}/`);
-            alert('Product deleted successfully!');
-            fetchSellerProducts();
-        } catch (error) {
-            console.error('Error deleting product:', error);
-            alert('Error deleting product');
-        }
+        showConfirm(`Delete "${productName}"? This cannot be undone.`, async () => {
+            try {
+                await axiosInstance.delete(`/products/${productId}/`);
+                showToast('Product deleted successfully!', 'success');
+                fetchSellerProducts();
+            } catch (error) {
+                console.error('Error deleting product:', error);
+                showToast('Error deleting product', 'error');
+            }
+        });
     };
 
     const addToCartHandler = async (product) => {
@@ -320,10 +337,10 @@ export default function Main() {
         } catch (error) {
             console.error('Error adding to cart:', error);
             if (error.response ?. status === 401) {
-                alert('Please login to add items to cart');
+                showToast('Please login to add items to cart', 'warning');
                 navigate('/login');
             } else {
-                alert('Error adding item to cart. Please try again.');
+                showToast('Error adding item to cart. Please try again.', 'error');
             }
         }
     };
@@ -342,9 +359,7 @@ export default function Main() {
     };
 
     const handleLogout = () => {
-        if (window.confirm('Are you sure you want to logout?')) {
-            logout();
-        }
+        showConfirm('Are you sure you want to logout?', () => { logout(); });
     };
 
     const toggleFilters = () => {
@@ -446,110 +461,50 @@ export default function Main() {
     }, [recommendedProducts, trendingProducts, newArrivalsProducts, topSellerProducts]);
 
     const applyFilters = (list) => list
-        .filter(p => appliedFilters.minRating > 0 ? (p.rating || 0) >= appliedFilters.minRating : true)
-        .filter(p => appliedFilters.stockStatus.includes('in_stock') ? p.stock > 0 : true)
-        .filter(p => parseFloat(p.price) <= appliedFilters.maxPrice);
+        .filter(p => minRating > 0 ? (p.rating || 0) >= minRating : true)
+        .filter(p => inStockOnly ? p.stock > 0 : true)
+        .filter(p => parseFloat(p.price) <= priceRange)
+        .sort((a, b) => {
+            switch (sortBy) {
+                case 'price_asc':  return parseFloat(a.price) - parseFloat(b.price);
+                case 'price_desc': return parseFloat(b.price) - parseFloat(a.price);
+                case 'name_asc':   return a.name.localeCompare(b.name);
+                case 'name_desc':  return b.name.localeCompare(a.name);
+                case 'newest':     return new Date(b.created_at) - new Date(a.created_at);
+                case 'rating':     return (b.rating || 0) - (a.rating || 0);
+                default:           return 0;
+            }
+        });
 
     // Render product section component
     const renderProductSection = (title, products, sectionId) => (
         <div className="home-products-container" key={sectionId}>
-            {/* Section Heading */}
             <div className="section-heading">
                 <h2>{title}</h2>
-                <button 
+                <button
                     className="view-all-btn"
                     onClick={() => navigate(`/view-all${selectedCategory ? `?category=${selectedCategory}` : ''}`)}
                 >
                     View All
                 </button>
             </div>
-            
-            <button 
-                className={`home-scroll-arrow left ${!canScrollLeft ? 'disabled' : ''}`}
-                onClick={scrollLeft}
-                disabled={!canScrollLeft}
-            >
+
+            <button className={`home-scroll-arrow left ${!canScrollLeft ? 'disabled' : ''}`} onClick={scrollLeft} disabled={!canScrollLeft}>
                 <FaChevronLeft />
             </button>
-            
-            <div className="home-products-etsy-grid" ref={productsScrollRef}>
-                {
-                products.map((product) => (
-                    <div className="home-etsy-product-card"
-                        key={`${sectionId}-${product.id}`}>
-                        <div className="home-product-image-container"
-                            onClick={() => navigate(`/product/${product.id}`)}>
-                            <img src={getImageUrl(product.image_url, product.image)}
-                                alt={product.name}
-                                onError={handleImageError}
-                            />
-                            {product.badge && (
-                                <div className="product-badge">
-                                    {product.badge}
-                                </div>
-                            )}
-                            {product.discount > 0 && (
-                                <div className="discount-badge">-{product.discount}%</div>
-                            )}
-                            <button 
-                                className={`wishlist-button ${wishlistService.isInWishlist(product.id) ? 'active' : ''}`}
-                                onClick={(e) => toggleWishlist(product, e)}
-                            >
-                                <FaHeart/>
-                            </button>
-                        </div>
 
-                        <div className="product-info"
-                            onClick={() => navigate(`/product/${product.id}`)}>
-                            <div className="seller-info">
-                                <span className="seller-name">
-                                    {product.seller_name || 'Ecomarket Seller'}
-                                </span>
-                                <span className="shipping-info">
-                                    {product.shipping}
-                                </span>
-                            </div>
-
-                            <h3 className="product-title">
-                                {product.name}
-                            </h3>
-
-                            <div className="rating-info">
-                                <div className="stars">
-                                    {renderStars(product.rating || 0)}
-                                    <span className="rating-number">
-                                        {product.rating ? product.rating.toFixed(1) : 'No ratings'}
-                                    </span>
-                                </div>
-                            </div>
-
-                            <div className="price-section">
-                                {product.oldPrice ? (
-                                    <div className="price-with-discount">
-                                        <span className="" style={{fontSize: "10px"}}>
-                                            Rs {Math.round(product.price)}
-                                        </span>
-                                        <span className="original-price">
-                                            Rs {Math.round(product.oldPrice)}
-                                        </span>
-                                    </div>
-                                ) : (
-                                    <span className="current-price">
-                                        Rs {Math.round(product.price)}
-                                    </span>
-                                )}
-                            </div>
-                        </div>
+            <div className="home-products-etsy-grid" ref={productsScrollRef} style={{ display: 'flex', gap: 16, overflowX: 'auto', padding: '10px 0', scrollbarWidth: 'none' }}>
+                {products.map(product => (
+                    <div key={`${sectionId}-${product.id}`} style={{ flex: '0 0 220px', minWidth: 220 }}>
+                        <ProductCard
+                            product={product}
+                            onWishlistToggle={() => setWishlistItems(wishlistService.getWishlist())}
+                        />
                     </div>
-                ))
-            }
+                ))}
             </div>
-            
-            <button 
-                className={`home-scroll-arrow right ${!canScrollRight ? 'disabled' : ''}`}
-                onClick={scrollRight}
-                disabled={!canScrollRight}
-            >
+
+            <button className={`home-scroll-arrow right ${!canScrollRight ? 'disabled' : ''}`} onClick={scrollRight} disabled={!canScrollRight}>
                 <FaChevronRight />
             </button>
         </div>
@@ -574,7 +529,7 @@ export default function Main() {
                                 onChange={
                                     (e) => setSearch(e.target.value)
                                 }
-                                onKeyPress={handleSearch}/>
+                                onKeyDown={handleSearch}/>
                             <button className="search-button" onClick={handleSearch}>
                                 Search
                             </button>
@@ -695,430 +650,144 @@ export default function Main() {
 
             {/* Main Content */}
             <div className="home-main-container">
-                {/* Filter and Sort Bar */}
-                <div className="filter-sort-bar">
-                    <div className="filter-dropdown">
-                        <button className="filter-toggle"
-                            onClick={toggleFilters}>
-                            <FaFilter/>
-                            Filters {appliedFilters.minRating > 0 && `(${appliedFilters.minRating}★+)`}</button>
+                <div className="page-layout">
+                    {/* ── Left Filter Sidebar ── */}
+                    <aside className="filter-sidebar">
+                        <div className="sidebar-header">
+                            <FaFilter className="sidebar-header-icon" />
+                            <h3>Filters</h3>
+                            {(minRating > 0 || inStockOnly || priceRange < 2500 || selectedCategory) && (
+                                <button className="sidebar-clear-btn" onClick={() => {
+                                    setMinRating(0);
+                                    setInStockOnly(false);
+                                    setPriceRange(2500);
+                                    setSelectedCategory('');
+                                }}>Clear all</button>
+                            )}
+                        </div>
 
+                        <div className="sidebar-section">
+                            <h5>Price Range</h5>
+                            <input type="range" min="0" max="2500"
+                                value={priceRange} className="price-range"
+                                onChange={(e) => setPriceRange(Number(e.target.value))} />
+                            <div className="price-values">
+                                <span>Rs 0</span>
+                                <span>Rs {priceRange}</span>
+                            </div>
+                        </div>
 
-                        {
-                        showFilters && (
-                            <div className="filter-panel">
-                                <div className="filter-header">
-                                    <h4>Filters</h4>
-                                    <button className="close-filters"
-                                        onClick={
-                                            () => setShowFilters(false)
-                                    }>
-                                        <FaTimes/>
-                                    </button>
-                                </div>
-
-                                <div className="filter-section">
-                                    <h5>Price Range</h5>
-                                    <input type="range" min="0" max="2000"
-                                        value={priceRange}
-                                        className="price-range"
-                                        onChange={
-                                            (e) => setPriceRange(e.target.value)
-                                        }/>
-                                    <div className="price-values">
-                                        <span>Rs 0</span>
-                                        <span>Rs {priceRange}</span>
-                                    </div>
-                                </div>
-
-
-                                <div className="filter-section">
-                                    <h5>Eco Rating</h5>
-                                    <div className="rating-filters">
-                                        {[5, 4, 3].map((rating) => (
-                                            <label key={rating} className="rating-filter">
-                                                <input
-                                                    type="radio"
-                                                    name="ecoRating"
-                                                    checked={appliedFilters.minRating === rating}
-                                                    onChange={() => setAppliedFilters(prev => ({
-                                                        ...prev,
-                                                        minRating: prev.minRating === rating ? 0 : rating
-                                                    }))}
-                                                />
-                                                <span className="stars">
-                                                    {Array(rating).fill().map((_, i) => (
-                                                        <FaStar key={i} className="star small"/>
-                                                    ))}
-                                                    <span className="rating-text">& up</span>
-                                                </span>
-                                            </label>
-                                        ))}
-                                        {appliedFilters.minRating > 0 && (
-                                            <button
-                                                style={{fontSize:'0.8rem', color:'#888', background:'none', border:'none', cursor:'pointer', padding:'4px 0'}}
-                                                onClick={() => setAppliedFilters(prev => ({...prev, minRating: 0}))}
-                                            >
-                                                Clear rating
-                                            </button>
-                                        )}
-                                    </div>
-                                </div>
-
-                                <div className="filter-section">
-                                    <h5>Stock Status</h5>
-                                    <label className="stock-filter">
-                                        <input type="checkbox"
-                                            checked={
-                                                appliedFilters.stockStatus.includes('in_stock')
-                                            }
-                                            onChange={
-                                                (e) => {
-                                                    if (e.target.checked) {
-                                                        setAppliedFilters(prev => ({
-                                                            ...prev,
-                                                            stockStatus: [
-                                                                ...prev.stockStatus,
-                                                                'in_stock'
-                                                            ]
-                                                        }));
-                                                    } else {
-                                                        setAppliedFilters(prev => ({
-                                                            ...prev,
-                                                            stockStatus: prev.stockStatus.filter(s => s !== 'in_stock')
-                                                        }));
-                                                    }
-                                                }
-                                            }/>
-                                        In Stock Only
+                        <div className="sidebar-section">
+                            <h5>Eco Rating</h5>
+                            <div className="rating-filters">
+                                {[5, 4, 3].map((rating) => (
+                                    <label key={rating} className="rating-filter">
+                                        <input type="radio" name="ecoRating"
+                                            checked={minRating === rating}
+                                            onChange={() => setMinRating(minRating === rating ? 0 : rating)} />
+                                        <span className="stars">
+                                            {Array(rating).fill().map((_, i) => (
+                                                <FaStar key={i} className="star small"/>
+                                            ))}
+                                            <span className="rating-text">& up</span>
+                                        </span>
                                     </label>
-                                </div>
-
-                                <div className="filter-actions">
-                                    <button className="btn-apply"
-                                        onClick={
-                                            () => {
-                                                console.log('Applying filters:', appliedFilters);
-                                                setShowFilters(false);
-                                            }
-                                    }>
-                                        Apply Filters
-                                    </button>
-                                    <button className="btn-clear"
-                                        onClick={
-                                            () => {
-                                                setAppliedFilters({minRating: 0, stockStatus: [], maxPrice: 2500});
-                                                setPriceRange(2500);
-                                            }
-                                    }>
-                                        Clear All
-                                    </button>
-                                </div>
+                                ))}
                             </div>
-                        )
-                    } </div>
+                        </div>
 
-                    <div className="sort-options">
-                        <FaSortAmountDown/>
-                        <select value={selectedCategory}
-                            onChange={
-                                (e) => setSelectedCategory(e.target.value)
-                        }>
-                            <option value="">All Categories</option>
-                            {ecoCategories.map(category => (
-                                <option key={category.id} value={category.slug}>
-                                    {category.name}
-                                </option>
-                            ))}
-                        </select>
+                        <div className="sidebar-section">
+                            <h5>Availability</h5>
+                            <label className="stock-filter">
+                                <input type="checkbox"
+                                    checked={inStockOnly}
+                                    onChange={(e) => setInStockOnly(e.target.checked)} />
+                                In Stock Only
+                            </label>
+                        </div>
+
+                        <div className="sidebar-section">
+                            <h5>Eco Category</h5>
+                            <div className="sidebar-eco-list">
+                                <label className="sidebar-eco-item">
+                                    <input type="radio" name="ecoCategory"
+                                        checked={selectedCategory === ''}
+                                        onChange={() => setSelectedCategory('')} />
+                                    <span>All Categories</span>
+                                </label>
+                                {ecoCategories.map(cat => (
+                                    <label key={cat.id} className="sidebar-eco-item">
+                                        <input type="radio" name="ecoCategory"
+                                            checked={selectedCategory === cat.slug}
+                                            onChange={() => setSelectedCategory(cat.slug)} />
+                                        <span>{cat.name}</span>
+                                    </label>
+                                ))}
+                            </div>
+                        </div>
+                    </aside>
+
+                    {/* ── Right Content Area ── */}
+                    <div className="content-area">
+                        {/* Sort bar */}
+                        <div className="content-topbar">
+                            <span className="product-count">Explore eco-friendly products</span>
+                            <SortDropdown value={sortBy} onChange={setSortBy} />
+                        </div>
+
+                        {/* Multiple Product Sections */}
+                        {renderProductSection("Recommended for you", applyFilters(recommendedProducts), "recommended")}
+                        {renderProductSection("Trending Now", applyFilters(trendingProducts), "trending")}
+
+                        {/* Recently Added */}
+                        <div className="home-products-container">
+                            <div className="section-heading">
+                                <h2>Recently Added</h2>
+                                <button className="view-all-btn"
+                                    onClick={() => navigate(`/view-all${selectedCategory ? `?eco_category=${selectedCategory}` : ''}`)}>
+                                    View All
+                                </button>
+                            </div>
+                            <button className={`home-scroll-arrow left ${!canScrollLeft ? 'disabled' : ''}`}
+                                onClick={scrollLeft} disabled={!canScrollLeft}><FaChevronLeft/></button>
+                            <div className="home-products-etsy-grid" ref={productsScrollRef}
+                                style={{ display: 'flex', gap: 16, overflowX: 'auto', padding: '10px 0', scrollbarWidth: 'none' }}>
+                                {applyFilters(products).map(product => (
+                                    <div key={product.id} style={{ flex: '0 0 220px', minWidth: 220 }}>
+                                        <ProductCard product={product}
+                                            onWishlistToggle={() => setWishlistItems(wishlistService.getWishlist())} />
+                                    </div>
+                                ))}
+                            </div>
+                            <button className={`home-scroll-arrow right ${!canScrollRight ? 'disabled' : ''}`}
+                                onClick={scrollRight} disabled={!canScrollRight}><FaChevronRight/></button>
+                        </div>
+
+                        {/* Top Seller */}
+                        <div className="home-products-container">
+                            <div className="section-heading">
+                                <h2>Top Seller</h2>
+                                <button className="view-all-btn"
+                                    onClick={() => navigate(`/view-all${selectedCategory ? `?eco_category=${selectedCategory}` : ''}`)}>
+                                    View All
+                                </button>
+                            </div>
+                            <button className={`home-scroll-arrow left ${!canScrollLeft ? 'disabled' : ''}`}
+                                onClick={scrollLeft} disabled={!canScrollLeft}><FaChevronLeft/></button>
+                            <div className="home-products-etsy-grid" ref={productsScrollRef}
+                                style={{ display: 'flex', gap: 16, overflowX: 'auto', padding: '10px 0', scrollbarWidth: 'none' }}>
+                                {applyFilters(topSellerProducts).map(product => (
+                                    <div key={product.id} style={{ flex: '0 0 220px', minWidth: 220 }}>
+                                        <ProductCard product={product}
+                                            onWishlistToggle={() => setWishlistItems(wishlistService.getWishlist())} />
+                                    </div>
+                                ))}
+                            </div>
+                            <button className={`home-scroll-arrow right ${!canScrollRight ? 'disabled' : ''}`}
+                                onClick={scrollRight} disabled={!canScrollRight}><FaChevronRight/></button>
+                        </div>
                     </div>
                 </div>
-
-                {/* Multiple Product Sections */}
-                {renderProductSection("Recommended for you", applyFilters(recommendedProducts), "recommended")}
-                {renderProductSection("Trending Now", applyFilters(trendingProducts), "trending")}
-                {/* {renderProductSection("New Arrivals", newArrivalsProducts, "new-arrivals")} */}
-
-                {/* Products Grid with Horizontal Scroll */}
-                <div className="home-products-container">
-                    {/* Section Heading */}
-                    <div className="section-heading">
-                        <h2>Recently Added</h2>
-                        <button 
-                            className="view-all-btn"
-                            onClick={() => navigate(`/view-all${selectedCategory ? `?category=${selectedCategory}` : ''}`)}
-                        >
-                            View All
-                        </button>
-                    </div>
-
-                    <button className={
-                            `home-scroll-arrow left ${
-                                !canScrollLeft ? 'disabled' : ''
-                            }`
-                        }
-                        onClick={scrollLeft}
-                        disabled={
-                            !canScrollLeft
-                    }>
-                        <FaChevronLeft/>
-                    </button>
-
-                    <div className="home-products-etsy-grid"
-                        ref={productsScrollRef}>
-                        {
-                        applyFilters(products).map((product) => (
-                            <div className="home-etsy-product-card"
-                                key={
-                                    product.id
-                            }>
-                                <div className="home-product-image-container"
-                                    onClick={
-                                        () => navigate(`/product/${
-                                            product.id
-                                        }`)
-                                }>
-                                    <img src={
-                                            product.image_url || product.image
-                                        }
-                                        alt={
-                                            product.name
-                                        }
-                                        onError={
-                                            (e) => {
-                                                e.target.src = 'https://images.unsplash.com/photo-1559056199-641a0ac8b55e?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80';
-                                            }
-                                        }/> {
-                                    product.badge && (
-                                        <div className="product-badge">
-                                            {
-                                            product.badge
-                                        }</div>
-                                    )
-                                }
-                                    {
-                                    product.discount > 0 && (
-                                        <div className="discount-badge">-{
-                                            product.discount
-                                        }%</div>
-                                    )
-                                }
-                                    <button className="wishlist-button">
-                                        <FaHeart/>
-                                    </button>
-                                </div>
-
-                                <div className="product-info"
-                                    onClick={
-                                        () => navigate(`/product/${
-                                            product.id
-                                        }`)
-                                }>
-                                    <div className="seller-info">
-                                        <span className="seller-name">
-                                            {product.seller_name || 'Ecomarket Seller'}
-                                        </span>
-                                        <span className="shipping-info">
-                                            {
-                                            product.shipping
-                                        }</span>
-                                    </div>
-
-                                    <h3 className="product-title">
-                                        {
-                                        product.name
-                                    }</h3>
-
-                                    <div className="rating-info">
-                                        <div className="stars">
-                                            {
-                                            renderStars(product.rating || 0)
-                                        }
-                                            <span className="rating-number">
-                                                {
-                                                product.rating ? product.rating.toFixed(1) : 'No ratings'
-                                            }</span>
-                                        </div>
-                                    </div>
-
-                                    <div className="price-section">
-                                        {
-                                        product.oldPrice ? (
-                                            <div className="price-with-discount">
-                                                <span className=""
-                                                    style={
-                                                        {fontSize: "10px"}
-                                                }>Rs {
-                                                    Math.round(product.price)
-                                                }</span>
-                                                <span className="original-price">Rs {
-                                                    Math.round(product.oldPrice)
-                                                }</span>
-                                            </div>
-                                        ) : (
-                                            <span className="current-price">Rs {
-                                                Math.round(product.price)
-                                            }</span>
-                                        )
-                                    } </div>
-                                </div>
-                            </div>
-                        ))
-                    } </div>
-
-                    <button className={
-                            `home-scroll-arrow right ${
-                                !canScrollRight ? 'disabled' : ''
-                            }`
-                        }
-                        onClick={scrollRight}
-                        disabled={
-                            !canScrollRight
-                    }>
-                        <FaChevronRight/>
-                    </button>
-                </div>
-
-                {/* Products Grid with Horizontal Scroll */}
-                <div className="home-products-container">
-                    {/* Section Heading */}
-                    <div className="section-heading">
-                        <h2>Top Seller</h2>
-                        <button 
-                            className="view-all-btn"
-                            onClick={() => navigate(`/view-all${selectedCategory ? `?category=${selectedCategory}` : ''}`)}
-                        >
-                            View All
-                        </button>
-                    </div>
-
-                    <button className={
-                            `home-scroll-arrow left ${
-                                !canScrollLeft ? 'disabled' : ''
-                            }`
-                        }
-                        onClick={scrollLeft}
-                        disabled={
-                            !canScrollLeft
-                    }>
-                        <FaChevronLeft/>
-                    </button>
-
-                    <div className="home-products-etsy-grid"
-                        ref={productsScrollRef}>
-                        {
-                        applyFilters(topSellerProducts).map((product) => (
-                            <div className="home-etsy-product-card"
-                                key={
-                                    product.id
-                            }>
-                                <div className="home-product-image-container"
-                                    onClick={
-                                        () => navigate(`/product/${
-                                            product.id
-                                        }`)
-                                }>
-                                    <img src={
-                                            product.image_url || product.image
-                                        }
-                                        alt={
-                                            product.name
-                                        }
-                                        onError={
-                                            (e) => {
-                                                e.target.src = 'https://images.unsplash.com/photo-1559056199-641a0ac8b55e?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80';
-                                            }
-                                        }/> {
-                                    product.badge && (
-                                        <div className="product-badge">
-                                            {
-                                            product.badge
-                                        }</div>
-                                    )
-                                }
-                                    {
-                                    product.discount > 0 && (
-                                        <div className="discount-badge">-{
-                                            product.discount
-                                        }%</div>
-                                    )
-                                }
-                                    <button className="wishlist-button">
-                                        <FaHeart/>
-                                    </button>
-                                </div>
-
-                                <div className="product-info"
-                                    onClick={
-                                        () => navigate(`/product/${
-                                            product.id
-                                        }`)
-                                }>
-                                    <div className="seller-info">
-                                        <span className="seller-name">
-                                            {product.seller_name || 'Ecomarket Seller'}
-                                        </span>
-                                        <span className="shipping-info">
-                                            {
-                                            product.shipping
-                                        }</span>
-                                    </div>
-
-                                    <h3 className="product-title">
-                                        {
-                                        product.name
-                                    }</h3>
-
-                                    <div className="rating-info">
-                                        <div className="stars">
-                                            {
-                                            renderStars(product.rating || 0)
-                                        }
-                                            <span className="rating-number">
-                                                {
-                                                product.rating ? product.rating.toFixed(1) : 'No ratings'
-                                            }</span>
-                                        </div>
-                                    </div>
-
-                                    <div className="price-section">
-                                        {
-                                        product.oldPrice ? (
-                                            <div className="price-with-discount">
-                                                <span className=""
-                                                    style={
-                                                        {fontSize: "10px"}
-                                                }>Rs {
-                                                    Math.round(product.price)
-                                                }</span>
-                                                <span className="original-price">Rs {
-                                                    Math.round(product.oldPrice)
-                                                }</span>
-                                            </div>
-                                        ) : (
-                                            <span className="current-price">Rs {
-                                                Math.round(product.price)
-                                            }</span>
-                                        )
-                                    } </div>
-                                </div>
-                            </div>
-                        ))
-                    } </div>
-
-                    <button className={
-                            `home-scroll-arrow right ${
-                                !canScrollRight ? 'disabled' : ''
-                            }`
-                        }
-                        onClick={scrollRight}
-                        disabled={
-                            !canScrollRight
-                    }>
-                        <FaChevronRight/>
-                    </button>
-                </div>
-
             </div>
 
             {/* Floating Add Product Button - Only for Sellers */}
@@ -1132,84 +801,7 @@ export default function Main() {
         }
 
             {/* Footer */}
-            <footer>
-                <div className="home-main-container">
-                    <div className="footer-content">
-                        <div className="footer-column">
-                            <h3>Ecomarket</h3>
-                            <p>Your trusted marketplace for sustainable, eco-friendly products. Making green shopping accessible to everyone.</p>
-                            <div className="social-icons">
-                                <a href="#"><FaFacebookF/></a>
-                                <a href="#"><FaTwitter/></a>
-                                <a href="#"><FaInstagram/></a>
-                                <a href="#"><FaLinkedinIn/></a>
-                            </div>
-                        </div>
-
-                        <div className="footer-column">
-                            <h3>Quick Links</h3>
-                            <ul className="footer-links">
-                                <li>
-                                    <a href="#">Home</a>
-                                </li>
-                                <li>
-                                    <a href="#">Shop</a>
-                                </li>
-                                <li>
-                                    <a href="#">Categories</a>
-                                </li>
-                                <li>
-                                    <a href="#">About Us</a>
-                                </li>
-                                <li>
-                                    <a href="#">Contact</a>
-                                </li>
-                            </ul>
-                        </div>
-
-                        <div className="footer-column">
-                            <h3>Categories</h3>
-                            <ul className="footer-links">
-                                <li>
-                                    <a href="#">Recycled Items</a>
-                                </li>
-                                <li>
-                                    <a href="#">Organic Products</a>
-                                </li>
-                                <li>
-                                    <a href="#">Energy-Efficient</a>
-                                </li>
-                                <li>
-                                    <a href="#">Reusable Household</a>
-                                </li>
-                                <li>
-                                    <a href="#">Handmade Crafts</a>
-                                </li>
-                            </ul>
-                        </div>
-
-                        <div className="footer-column">
-                            <h3>Contact Us</h3>
-                            <ul className="footer-links">
-                                <li><FaMapMarkerAlt/>
-                                    Bhagwati Marg, Naxal</li>
-                                <li><FaPhone/>
-                                    +977 9876543210</li>
-                                <li><FaEnvelope/>
-                                    info@ecomarket.com</li>
-                            </ul>
-                        </div>
-                    </div>
-
-                    <div className="copyright">
-                        <p>&copy; 2026 Ecomarket. All rights reserved. | Designed with
-                            <FaHeart style={
-                                {color: '#ff6b6b'}
-                            }/>
-                            for a sustainable future.</p>
-                    </div>
-                </div>
-            </footer>
+            <Footer />
         </div>
     );
 }

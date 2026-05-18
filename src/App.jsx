@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { ToastContainer, ConfirmDialog } from "./components/Toast";
 
 import LandingPage from "./components/LandingPage";
 import Home from "./components/Home";
@@ -21,10 +22,14 @@ import Wishlist from "./components/Wishlist";
 import SellerDashboard from "./components/SellerDashboard";
 import OrderTracking from "./components/OrderTracking";
 import Chat from "./components/Chat";
+import AdminDashboard from "./components/AdminDashboard";
+import AdminLogin from "./components/AdminLogin";
 
 function App() {
   return (
     <BrowserRouter>
+      <ToastContainer />
+      <ConfirmDialog />
       <Routes>
 
         {/* Public Pages */}
@@ -115,9 +120,17 @@ function App() {
           </ProtectedRoute>
         } />
 
-        <Route path="/chat/:orderId" element={
+        <Route path="/chat/:orderId/:sellerId" element={
           <ProtectedRoute>
             <Chat />
+          </ProtectedRoute>
+        } />
+
+        <Route path="/admin-login" element={<AdminLogin />} />
+
+        <Route path="/admin-dashboard" element={
+          <ProtectedRoute>
+            <AdminDashboard />
           </ProtectedRoute>
         } />
 

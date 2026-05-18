@@ -6,7 +6,7 @@ import Header from './Header';
 import { getUserFromToken } from '../utils/auth';
 
 const Chat = () => {
-  const { orderId } = useParams();
+  const { orderId, sellerId } = useParams();
   const navigate = useNavigate();
   const [room, setRoom] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -19,7 +19,7 @@ const Chat = () => {
 
   const fetchChat = async () => {
     try {
-      const res = await axiosInstance.get(`/chat/${orderId}/`);
+      const res = await axiosInstance.get(`/chat/${orderId}/${sellerId}/`);
       setRoom(res.data);
       setMessages(res.data.messages || []);
       setError('');
@@ -32,10 +32,9 @@ const Chat = () => {
 
   useEffect(() => {
     fetchChat();
-    // Poll every 5 seconds for new messages
     const interval = setInterval(fetchChat, 5000);
     return () => clearInterval(interval);
-  }, [orderId]);
+  }, [orderId, sellerId]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -46,7 +45,7 @@ const Chat = () => {
     if (!input.trim()) return;
     setSending(true);
     try {
-      const res = await axiosInstance.post(`/chat/${orderId}/send/`, { content: input.trim() });
+      const res = await axiosInstance.post(`/chat/${orderId}/${sellerId}/send/`, { content: input.trim() });
       setMessages(prev => [...prev, res.data]);
       setInput('');
     } catch (err) {
@@ -57,15 +56,13 @@ const Chat = () => {
   };
 
   if (loading) return (
-    <div style={styles.page}>
-      <Header showBackButton={false} />
+    <div style={styles.page}><Header showBackButton={false} />
       <div style={styles.center}><p>Loading chat...</p></div>
     </div>
   );
 
   if (error) return (
-    <div style={styles.page}>
-      <Header showBackButton={false} />
+    <div style={styles.page}><Header showBackButton={false} />
       <div style={styles.center}>
         <p style={{ color: '#e53935' }}>{error}</p>
         <button style={styles.backBtn} onClick={() => navigate(-1)}>Go Back</button>
@@ -77,23 +74,19 @@ const Chat = () => {
     <div style={styles.page}>
       <Header showBackButton={false} />
       <div style={styles.container}>
-        {/* Chat Header */}
         <div style={styles.chatHeader}>
           <button style={styles.backBtn} onClick={() => navigate(-1)}>
             <FaArrowLeft /> Back
           </button>
           <div style={styles.chatTitle}>
-            <FaComments style={{ color: '#2E7D32' }} />
+            <FaComments style={{ color: '#2E7D32', fontSize: '1.4rem' }} />
             <div>
-              <h3 style={{ margin: 0, color: '#1B5E20' }}>Order #{orderId} Chat</h3>
-              <p style={{ margin: 0, fontSize: '0.85rem', color: '#666' }}>
-                {room?.buyer_name} ↔ {room?.seller_name}
-              </p>
+              <h3 style={{ margin: 0, color: '#1B5E20' }}>Chat with {room?.seller_name}</h3>
+              <p style={{ margin: 0, fontSize: '0.82rem', color: '#666' }}>Order #{orderId}</p>
             </div>
           </div>
         </div>
 
-        {/* Messages */}
         <div style={styles.messagesBox}>
           {messages.length === 0 && (
             <div style={styles.emptyChat}>
@@ -120,13 +113,12 @@ const Chat = () => {
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Input */}
         <form onSubmit={sendMessage} style={styles.inputRow}>
           <input
             style={styles.input}
             value={input}
             onChange={e => setInput(e.target.value)}
-            placeholder="Type a message... (e.g. damaged product, update request)"
+            placeholder="Type a message..."
             disabled={sending}
           />
           <button type="submit" style={styles.sendBtn} disabled={sending || !input.trim()}>

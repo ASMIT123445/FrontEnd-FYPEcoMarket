@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
 import { FaLeaf, FaSpinner } from "react-icons/fa";
+import { showToast } from './Toast';
 
 export default function EmailVerification() {
   const navigate = useNavigate();
@@ -38,7 +39,7 @@ export default function EmailVerification() {
       // Set welcome flag
       localStorage.setItem('justRegistered', 'true');
 
-      alert(response.data.message);
+      showToast(response.data.message, 'success');
 
       // Redirect based on role
       if (response.data.role === "seller") {

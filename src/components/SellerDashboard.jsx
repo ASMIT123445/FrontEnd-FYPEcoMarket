@@ -9,7 +9,10 @@ import Header from './Header';
 import { getUserFromToken } from '../utils/auth';
 import axiosInstance from '../services/axiosInstance';
 import { getImageUrl, handleImageError } from '../utils/imageHelper';
+import ChatWidget from './ChatWidget';
+import Footer from './Footer';
 import '../styles/SellerDashboard.css';
+import { showToast, showConfirm } from './Toast';
 
 const SellerDashboard = () => {
     const navigate = useNavigate();
@@ -25,6 +28,7 @@ const SellerDashboard = () => {
         totalRevenue: 0
     });
     const [loading, setLoading] = useState(true);
+    const [activeChat, setActiveChat] = useState(null); // { orderId, buyerName }
 
     useEffect(() => {
         const initUser = async () => {
@@ -46,7 +50,7 @@ const SellerDashboard = () => {
                 if (response.ok) {
                     const profileData = await response.json();
                     if (profileData.role !== 'seller') {
-                        alert('Access denied. Seller account required.');
+                        showToast('Access denied. Seller account required.', 'error');
                         navigate('/products');
                         return;
                     }
@@ -105,16 +109,16 @@ const SellerDashboard = () => {
     };
 
     const handleDeleteProduct = async (productId, productName) => {
-        if (!window.confirm(`Delete "${productName}"? This cannot be undone.`)) return;
-        
-        try {
-            await axiosInstance.delete(`/products/${productId}/`);
-            alert('Product deleted successfully!');
-            fetchDashboardData();
-        } catch (error) {
-            console.error('Error deleting product:', error);
-            alert('Error deleting product');
-        }
+        showConfirm(`Delete "${productName}"? This cannot be undone.`, async () => {
+            try {
+                await axiosInstance.delete(`/products/${productId}/`);
+                showToast('Product deleted successfully!', 'success');
+                fetchDashboardData();
+            } catch (error) {
+                console.error('Error deleting product:', error);
+                showToast('Error deleting product', 'error');
+            }
+        });
     };
 
     const handleUpdateOrderStatus = async (orderId, newStatus) => {
@@ -130,10 +134,10 @@ const SellerDashboard = () => {
             if (res.ok) {
                 setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
             } else {
-                alert('Failed to update status');
+                showToast('Failed to update status', 'error');
             }
         } catch (err) {
-            alert('Error updating order status');
+            showToast('Error updating order status', 'error');
         }
     };
 
@@ -150,10 +154,10 @@ const SellerDashboard = () => {
             if (res.ok) {
                 setOrders(prev => prev.map(o => o.id === orderId ? { ...o, payment_status: newPaymentStatus } : o));
             } else {
-                alert('Failed to update payment status');
+                showToast('Failed to update payment status', 'error');
             }
         } catch (err) {
-            alert('Error updating payment status');
+            showToast('Error updating payment status', 'error');
         }
     };
 
@@ -175,8 +179,8 @@ const SellerDashboard = () => {
             {/* Dashboard Header */}
             <div className="dashboard-header">
                 <div className="container">
-                    <button className="btn-back" onClick={() => navigate('/products')}>
-                        <FaArrowLeft /> Back to Products
+                    <button className="btn-back" onClick={() => navigate('/main')}>
+                        <FaArrowLeft /> Back to Home
                     </button>
                     <h1>📦 Seller Dashboard</h1>
                     <p>Welcome back, {user?.username || 'Seller'}!</p>
@@ -456,10 +460,10 @@ const SellerDashboard = () => {
                                                     </td>
                                                     <td>
                                                         <button
-                                                            onClick={() => navigate(`/chat/${order.id}`)}
-                                                            style={{ background: '#2E7D32', color: 'white', border: 'none', borderRadius: '6px', padding: '6px 12px', cursor: 'pointer', fontSize: '0.85rem' }}
+                                                            onClick={() => setActiveChat(activeChat?.orderId === order.id ? null : { orderId: order.id, buyerName: order.customer_name || `Order #${order.id}` })}
+                                                            style={{ background: activeChat?.orderId === order.id ? '#1B5E20' : '#2E7D32', color: 'white', border: 'none', borderRadius: '6px', padding: '6px 12px', cursor: 'pointer', fontSize: '0.85rem' }}
                                                         >
-                                                            💬 Chat
+                                                            💬 {activeChat?.orderId === order.id ? 'Close' : 'Chat'}
                                                         </button>
                                                     </td>
                                                 </tr>
@@ -472,8 +476,19 @@ const SellerDashboard = () => {
                     )}
                 </div>
             </div>
-        </div>
-    );
+
+        {/* Chat Widget for seller */}
+        {activeChat && user && (
+            <ChatWidget
+                orderId={activeChat.orderId}
+                sellerId={user.id}
+                sellerName={activeChat.buyerName}
+                onClose={() => setActiveChat(null)}
+            />
+        )}
+        <Footer />
+    </div>
+  );
 };
 
 export default SellerDashboard;

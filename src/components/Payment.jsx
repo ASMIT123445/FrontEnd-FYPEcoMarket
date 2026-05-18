@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { 
   FaLeaf, 
   FaShippingFast, 
-  FaCreditCard, 
+  FaWallet,
   FaReceipt, 
   FaLock, 
   FaCheck, 
@@ -22,11 +22,13 @@ import {
 } from 'react-icons/fa';
 import { cartService } from '../services/cartService';
 import { esewaService } from '../services/esewaService';
+import { khaltiService } from '../services/khaltiService';
 import { getUserFromToken } from '../utils/auth';
 import { getImageUrl, handleImageError } from '../utils/imageHelper';
 import Header from './Header';
 import '../styles/Header.css';
-
+import { showToast } from './Toast';
+import khaltiLogo from '../assets/khalti png.png';
 const Payment = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
@@ -34,7 +36,7 @@ const Payment = () => {
   const [loading, setLoading] = useState(true);
   const [orderLoading, setOrderLoading] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
-  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('card');
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('khalti');
   const [orderId, setOrderId] = useState('');
   const [deliveryDate, setDeliveryDate] = useState('');
   
@@ -79,6 +81,15 @@ const Payment = () => {
       
       if (userInfo) {
         try {
+          // Cancel any pending gateway orders from a previous abandoned session
+          await fetch('http://127.0.0.1:8000/api/orders/gateway/cancel-pending/', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('access')}`,
+              'Content-Type': 'application/json'
+            }
+          });
+
           // Fetch full profile data including address
           const profileResponse = await fetch('http://127.0.0.1:8000/api/profile/', {
             headers: {
@@ -170,8 +181,8 @@ const Payment = () => {
         return;
       }
       
-      // Calculate discount (10 points = Rs 1)
-      const discount = points / 10;
+      // Calculate discount (5 points = Rs 1)
+      const discount = points / 5;
       const { subtotal, shipping, tax } = calculateTotals();
       const orderTotal = subtotal + shipping + tax;
       const maxDiscount = orderTotal * 0.5; // 50% max discount
@@ -239,28 +250,8 @@ const Payment = () => {
   };
 
   const validatePayment = () => {
-    const newErrors = {};
-    
-    if (selectedPaymentMethod === 'card') {
-      if (!paymentData.cardNumber.trim()) newErrors.cardNumber = 'Card number is required';
-      else if (!/^\d{16}$/.test(paymentData.cardNumber.replace(/\s/g, ''))) {
-        newErrors.cardNumber = 'Please enter a valid 16-digit card number';
-      }
-      
-      if (!paymentData.expiryDate.trim()) newErrors.expiryDate = 'Expiry date is required';
-      else if (!/^(0[1-9]|1[0-2])\/\d{2}$/.test(paymentData.expiryDate)) {
-        newErrors.expiryDate = 'Please enter expiry in MM/YY format';
-      }
-      
-      if (!paymentData.cvv.trim()) newErrors.cvv = 'CVV is required';
-      else if (!/^\d{3,4}$/.test(paymentData.cvv)) {
-        newErrors.cvv = 'Please enter a valid CVV';
-      }
-      
-      if (!paymentData.cardName.trim()) newErrors.cardName = 'Name on card is required';
-    }
-    
-    return newErrors;
+    // Khalti, eSewa, and COD don't need client-side payment field validation
+    return {};
   };
 
   // Handle form submission
@@ -284,45 +275,14 @@ const Payment = () => {
       return;
     }
     
-    if (selectedPaymentMethod === 'cod') {
-      handleCODPayment();
+    if (selectedPaymentMethod === 'khalti') {
+      handleKhaltiPayment();
       return;
     }
     
-    // Handle credit card payment (default)
-    setOrderLoading(true);
-    
-    try {
-      // Create order through API
-      const orderData = {
-        points_to_redeem: pointsToRedeem ? parseInt(pointsToRedeem) : 0
-      };
-      
-      const response = await fetch('http://127.0.0.1:8000/api/orders/create/', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('access')}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(orderData)
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        // Redirect to order confirmation page with order data
-        navigate('/order-confirmation', { 
-          state: { order: data.order }
-        });
-      } else {
-        const errorData = await response.json();
-        alert(errorData.error || 'Order failed. Please try again.');
-      }
-      
-    } catch (error) {
-      console.error('Error placing order:', error);
-      alert('Order failed. Please try again.');
-    } finally {
-      setOrderLoading(false);
+    if (selectedPaymentMethod === 'cod') {
+      handleCODPayment();
+      return;
     }
   };
 
@@ -331,11 +291,13 @@ const Payment = () => {
     setOrderLoading(true);
     
     try {
-      // Prepare order data
+      const { subtotal, shipping, tax } = calculateTotals();
       const orderData = {
         shipping_address: `${shippingData.address}, ${shippingData.city}, ${shippingData.zipCode}`,
         phone_number: shippingData.phone,
-        points_to_redeem: pointsToRedeem ? parseInt(pointsToRedeem) : 0
+        points_to_redeem: pointsToRedeem ? parseInt(pointsToRedeem) : 0,
+        shipping_charge: shipping,
+        tax_amount: Math.round(tax)
       };
       
       // Initiate eSewa payment
@@ -345,13 +307,41 @@ const Payment = () => {
         // Submit payment form to eSewa
         esewaService.submitPaymentForm(response.payment_url, response.payment_data);
       } else {
-        alert('Failed to initiate eSewa payment. Please try again.');
+        showToast('Failed to initiate eSewa payment. Please try again.', 'error');
         setOrderLoading(false);
       }
       
     } catch (error) {
       console.error('Error initiating eSewa payment:', error);
-      alert(error.error || 'Failed to initiate payment. Please try again.');
+      showToast(error.error || 'Failed to initiate payment. Please try again.', 'error');
+      setOrderLoading(false);
+    }
+  };
+
+  // Handle Khalti payment
+  const handleKhaltiPayment = async () => {
+    setOrderLoading(true);
+    try {
+      const { shipping, tax } = calculateTotals();
+      const orderData = {
+        shipping_address: `${shippingData.address}, ${shippingData.city}, ${shippingData.zipCode}`,
+        phone_number: shippingData.phone,
+        points_to_redeem: pointsToRedeem ? parseInt(pointsToRedeem) : 0,
+        shipping_charge: shipping,
+        tax_amount: Math.round(tax),
+      };
+
+      const response = await khaltiService.initiatePayment(orderData);
+
+      if (response.payment_url) {
+        khaltiService.redirectToPayment(response.payment_url);
+      } else {
+        showToast('Failed to initiate Khalti payment. Please try again.', 'error');
+        setOrderLoading(false);
+      }
+    } catch (error) {
+      console.error('Khalti payment error:', error);
+      showToast(error.error || 'Failed to initiate Khalti payment. Please try again.', 'error');
       setOrderLoading(false);
     }
   };
@@ -361,11 +351,13 @@ const Payment = () => {
     setOrderLoading(true);
     
     try {
-      // Prepare order data
+      const { subtotal, shipping, tax } = calculateTotals();
       const orderData = {
         shipping_address: `${shippingData.address}, ${shippingData.city}, ${shippingData.zipCode}`,
         phone_number: shippingData.phone,
-        points_to_redeem: pointsToRedeem ? parseInt(pointsToRedeem) : 0
+        points_to_redeem: pointsToRedeem ? parseInt(pointsToRedeem) : 0,
+        shipping_charge: shipping,
+        tax_amount: Math.round(tax)
       };
       
       // Create COD order
@@ -377,12 +369,12 @@ const Payment = () => {
           state: { order: response.order }
         });
       } else {
-        alert('Failed to create order. Please try again.');
+        showToast('Failed to create order. Please try again.', 'error');
       }
       
     } catch (error) {
       console.error('Error creating COD order:', error);
-      alert(error.error || 'Failed to create order. Please try again.');
+      showToast(error.error || 'Failed to create order. Please try again.', 'error');
     } finally {
       setOrderLoading(false);
     }
@@ -585,17 +577,17 @@ const Payment = () => {
             {/* Payment Information */}
             <div className="form-section">
               <div className="section-header">
-                <FaCreditCard />
+                <FaWallet />
                 <h2>Payment Information</h2>
               </div>
               
               <div className="payment-methods">
                 <div 
-                  className={`payment-method ${selectedPaymentMethod === 'card' ? 'selected' : ''}`}
-                  onClick={() => setSelectedPaymentMethod('card')}
+                  className={`payment-method ${selectedPaymentMethod === 'khalti' ? 'selected' : ''}`}
+                  onClick={() => setSelectedPaymentMethod('khalti')}
                 >
-                  <FaCreditCard />
-                  <div className="method-name">Credit Card</div>
+                  <img src={khaltiLogo} alt="Khalti" style={{width: '32px', height: '32px', objectFit: 'contain'}} />
+                  <div className="method-name">Khalti</div>
                 </div>
                 <div 
                   className={`payment-method ${selectedPaymentMethod === 'esewa' ? 'selected' : ''}`}
@@ -614,80 +606,40 @@ const Payment = () => {
                 </div>
               </div>
               
-              {selectedPaymentMethod === 'card' && (
-                <div className="form-grid">
-                  <div className="form-group full-width">
-                    <label htmlFor="cardNumber">Card Number *</label>
-                    <input
-                      type="text"
-                      id="cardNumber"
-                      name="cardNumber"
-                      className={`form-control ${errors.cardNumber ? 'error' : ''}`}
-                      placeholder="1234 5678 9012 3456"
-                      value={paymentData.cardNumber}
-                      onChange={handlePaymentChange}
-                      required
-                    />
-                    {errors.cardNumber && <div className="error-message show">{errors.cardNumber}</div>}
-                  </div>
-                  
-                  <div className="form-group">
-                    <label htmlFor="expiryDate">Expiry Date *</label>
-                    <input
-                      type="text"
-                      id="expiryDate"
-                      name="expiryDate"
-                      className={`form-control ${errors.expiryDate ? 'error' : ''}`}
-                      placeholder="MM/YY"
-                      value={paymentData.expiryDate}
-                      onChange={handlePaymentChange}
-                      required
-                    />
-                    {errors.expiryDate && <div className="error-message show">{errors.expiryDate}</div>}
-                  </div>
-                  
-                  <div className="form-group">
-                    <label htmlFor="cvv">CVV *</label>
-                    <input
-                      type="text"
-                      id="cvv"
-                      name="cvv"
-                      className={`form-control ${errors.cvv ? 'error' : ''}`}
-                      placeholder="123"
-                      value={paymentData.cvv}
-                      onChange={handlePaymentChange}
-                      required
-                    />
-                    {errors.cvv && <div className="error-message show">{errors.cvv}</div>}
-                  </div>
-                  
-                  <div className="form-group full-width">
-                    <label htmlFor="cardName">Name on Card *</label>
-                    <input
-                      type="text"
-                      id="cardName"
-                      name="cardName"
-                      className={`form-control ${errors.cardName ? 'error' : ''}`}
-                      value={paymentData.cardName}
-                      onChange={handlePaymentChange}
-                      required
-                    />
-                    {errors.cardName && <div className="error-message show">{errors.cardName}</div>}
+              {selectedPaymentMethod === 'khalti' && (
+                <div className="form-group full-width" style={{textAlign: 'center', padding: '30px 0'}}>
+                  <div style={{
+                    backgroundColor: 'rgba(98, 0, 234, 0.06)',
+                    padding: '24px',
+                    borderRadius: '12px',
+                    border: '1px solid rgba(98, 0, 234, 0.2)'
+                  }}>
+                    <img src={khaltiLogo} alt="Khalti"
+                      style={{height: '40px', objectFit: 'contain', marginBottom: '14px'}} />
+                    <p style={{color: '#555', marginBottom: '6px'}}>
+                      You will be redirected to Khalti to complete your payment securely.
+                    </p>
+                    <p style={{color: '#888', fontSize: '0.85rem', marginBottom: '0'}}>
+                      Sandbox test ID: <strong>9800000001</strong> · MPIN: <strong>1111</strong> · OTP: <strong>987654</strong>
+                    </p>
                   </div>
                 </div>
               )}
               
               {selectedPaymentMethod === 'esewa' && (
-                <div className="form-group full-width" style={{textAlign: 'center', padding: '30px 0'}}>
-                  <p>You will be redirected to eSewa to complete your payment securely.</p>
-                  <button 
-                    type="button" 
-                    className="payment-gateway-btn esewa-btn"
-                    onClick={handleEsewaPayment}
-                  >
-                    <img src="https://esewa.com.np/common/images/esewa-icon-large.png" alt="eSewa" style={{width: '24px', height: '24px'}} />
-                    <span>Pay with eSewa</span>
-                  </button>
+                <div className="form-group full-width" style={{textAlign: 'center', padding: '20px 0'}}>
+                  <div style={{
+                    backgroundColor: 'rgba(76, 175, 80, 0.06)',
+                    padding: '20px',
+                    borderRadius: '12px',
+                    border: '1px solid rgba(76, 175, 80, 0.2)'
+                  }}>
+                    <img src="https://esewa.com.np/common/images/esewa-icon-large.png" alt="eSewa"
+                      style={{width: '40px', height: '40px', marginBottom: '10px'}} />
+                    <p style={{color: '#555', margin: 0}}>
+                      You will be redirected to eSewa to complete your payment securely.
+                    </p>
+                  </div>
                 </div>
               )}
               
@@ -796,7 +748,8 @@ const Payment = () => {
                 </div>
                 {errors.points && <div className="error-message show">{errors.points}</div>}
                 <div className="points-info-text">
-                  <p>• 10 points = Rs 1 off</p>
+                  <p>• Earn 1 point per Rs 10 spent</p>
+                  <p>• 5 points = Rs 1 off</p>
                   <p>• Min 50 points, Max 50% discount</p>
                 </div>
               </div>
@@ -824,40 +777,20 @@ const Payment = () => {
                 className={`btn-place-order ${orderLoading ? 'loading' : ''}`}
                 onClick={handlePlaceOrder}
                 disabled={orderLoading}
-                style={{
-                  display: (selectedPaymentMethod === 'card' || selectedPaymentMethod === 'cod') ? 'flex' : 'none'
-                }}
               >
                 {orderLoading ? <FaSpinner className="spinning" /> : <FaLock />}
-                <span>{orderLoading ? 'Processing Order...' : (selectedPaymentMethod === 'cod' ? 'Confirm Order' : 'Place Order')}</span>
+                <span>
+                  {orderLoading
+                    ? 'Processing...'
+                    : selectedPaymentMethod === 'cod'
+                      ? 'Confirm Order'
+                      : selectedPaymentMethod === 'khalti'
+                        ? 'Pay with Khalti'
+                        : selectedPaymentMethod === 'esewa'
+                          ? 'Pay with eSewa'
+                          : 'Place Order'}
+                </span>
               </button>
-
-              {/* Show payment instructions for gateway methods */}
-              {selectedPaymentMethod === 'esewa' && (
-                <div style={{
-                  textAlign: 'center',
-                  padding: '20px',
-                  backgroundColor: 'rgba(46, 125, 50, 0.1)',
-                  borderRadius: '12px',
-                  border: '2px solid rgba(46, 125, 50, 0.2)',
-                  marginTop: '20px'
-                }}>
-                  <p style={{
-                    color: '#1B5E20',
-                    fontWeight: '600',
-                    margin: '0 0 10px 0'
-                  }}>
-                    Complete Payment to Place Order
-                  </p>
-                  <p style={{
-                    color: '#666666',
-                    fontSize: '0.9rem',
-                    margin: '0'
-                  }}>
-                    Click the payment button above to proceed with eSewa payment.
-                  </p>
-                </div>
-              )}
             </div>
           </div>
         </div>
@@ -882,7 +815,7 @@ const Payment = () => {
             </div>
             
             <div className="modal-actions">
-              <button className="modal-btn btn-view-orders" onClick={() => alert('Orders page not implemented yet')}>
+              <button className="modal-btn btn-view-orders" onClick={() => showToast('Orders page coming soon!', 'info')}>
                 <FaClipboardList />
                 View Orders
               </button>
@@ -1238,27 +1171,27 @@ const Payment = () => {
         .summary-header {
           display: flex;
           align-items: center;
-          gap: 10px;
-          margin-bottom: 25px;
-          padding-bottom: 15px;
+          gap: 8px;
+          margin-bottom: 18px;
+          padding-bottom: 12px;
           border-bottom: 2px solid #F9F7F3;
         }
 
         .summary-header h2 {
-          font-size: 1.5rem;
+          font-size: 1rem;
           color: #1B5E20;
         }
 
         .cart-items-preview {
-          max-height: 300px;
+          max-height: 260px;
           overflow-y: auto;
-          margin-bottom: 25px;
+          margin-bottom: 18px;
         }
 
         .preview-item {
           display: flex;
-          gap: 15px;
-          padding: 15px 0;
+          gap: 10px;
+          padding: 10px 0;
           border-bottom: 1px solid #F9F7F3;
         }
 
@@ -1267,9 +1200,9 @@ const Payment = () => {
         }
 
         .preview-image {
-          width: 60px;
-          height: 60px;
-          border-radius: 8px;
+          width: 48px;
+          height: 48px;
+          border-radius: 6px;
           overflow: hidden;
           flex-shrink: 0;
         }
@@ -1286,34 +1219,35 @@ const Payment = () => {
 
         .preview-name {
           font-weight: 600;
-          margin-bottom: 5px;
-          font-size: 0.95rem;
+          margin-bottom: 3px;
+          font-size: 0.82rem;
         }
 
         .preview-meta {
           display: flex;
           justify-content: space-between;
           color: #666666;
-          font-size: 0.9rem;
+          font-size: 0.78rem;
         }
 
         .summary-totals {
-          margin: 25px 0;
+          margin: 18px 0;
         }
 
         .total-row {
           display: flex;
           justify-content: space-between;
-          margin-bottom: 12px;
+          margin-bottom: 10px;
           color: #666666;
+          font-size: 0.85rem;
         }
 
         .total-row.total {
-          font-size: 1.3rem;
+          font-size: 1rem;
           font-weight: 700;
           color: #1B5E20;
-          margin-top: 20px;
-          padding-top: 20px;
+          margin-top: 14px;
+          padding-top: 14px;
           border-top: 2px solid #F9F7F3;
         }
 

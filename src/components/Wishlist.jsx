@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { FaHome, FaChevronRight, FaHeart, FaShoppingCart, FaTrash, FaStar } from 'react-icons/fa';
 import { wishlistService } from '../services/wishlistService';
@@ -6,12 +6,13 @@ import { cartService } from '../services/cartService';
 import { getImageUrl, handleImageError } from '../utils/imageHelper';
 import Header from './Header';
 import '../styles/Wishlist.css';
+import Footer from './Footer';
+import { showConfirm, showToast } from './Toast';
 
 const Wishlist = () => {
     const navigate = useNavigate();
     const [wishlistItems, setWishlistItems] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [showMessage, setShowMessage] = useState('');
 
     useEffect(() => {
         const loadWishlist = () => {
@@ -32,20 +33,20 @@ const Wishlist = () => {
         wishlistService.removeFromWishlist(productId);
         const updatedItems = wishlistService.getWishlist();
         setWishlistItems(updatedItems);
-        displayMessage('Item removed from wishlist');
+        showToast('Item removed from wishlist', 'info');
     };
 
     const addToCart = async (item) => {
         try {
             await cartService.addToCart(item.id, 1);
-            displayMessage(`"${item.name}" added to cart!`);
+            showToast(`"${item.name}" added to cart!`, 'success');
         } catch (error) {
             console.error('Error adding to cart:', error);
             if (error.response?.status === 401) {
-                displayMessage('Please login to add items to cart');
+                showToast('Please login to add items to cart', 'warning');
                 setTimeout(() => navigate('/login'), 2000);
             } else {
-                displayMessage('Error adding item to cart');
+                showToast('Error adding item to cart', 'error');
             }
         }
     };
@@ -55,24 +56,19 @@ const Wishlist = () => {
             for (const item of wishlistItems) {
                 await cartService.addToCart(item.id, 1);
             }
-            displayMessage(`Added ${wishlistItems.length} items to cart!`);
+            showToast(`Added ${wishlistItems.length} items to cart!`, 'success');
         } catch (error) {
             console.error('Error adding items to cart:', error);
-            displayMessage('Error adding some items to cart');
+            showToast('Error adding some items to cart', 'error');
         }
     };
 
     const clearWishlist = () => {
-        if (window.confirm('Are you sure you want to clear your entire wishlist?')) {
+        showConfirm('Are you sure you want to clear your entire wishlist?', () => {
             wishlistService.clearWishlist();
             setWishlistItems([]);
-            displayMessage('Wishlist cleared');
-        }
-    };
-
-    const displayMessage = (text) => {
-        setShowMessage(text);
-        setTimeout(() => setShowMessage(''), 3000);
+            showToast('Wishlist cleared', 'info');
+        });
     };
 
     const renderStars = (rating) => {
@@ -126,13 +122,6 @@ const Wishlist = () => {
                     </div>
                 </div>
             </div>
-
-            {/* Message Display */}
-            {showMessage && (
-                <div className="message-popup">
-                    {showMessage}
-                </div>
-            )}
 
             <div className="container">
                 {/* Wishlist Header */}
@@ -232,12 +221,7 @@ const Wishlist = () => {
                 )}
             </div>
 
-            {/* Footer */}
-            <footer className="footer">
-                <div className="container">
-                    <p>&copy; 2026 Ecomarket. All rights reserved. | Sustainable shopping for a better planet.</p>
-                </div>
-            </footer>
+            <Footer />
         </div>
     );
 };

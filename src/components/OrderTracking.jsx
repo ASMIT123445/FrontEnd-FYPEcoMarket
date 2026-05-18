@@ -1,14 +1,20 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { FaArrowLeft, FaCheckCircle, FaClock, FaTimesCircle, FaBan } from 'react-icons/fa';
+import { FaArrowLeft, FaCheckCircle, FaClock, FaTimesCircle, FaBan, FaCheck  } from 'react-icons/fa';
+import { TbTruckDelivery } from "react-icons/tb";
+
 import Header from './Header';
+import ChatWidget from './ChatWidget';
 import '../styles/OrderTracking.css';
+import Footer from './Footer';
+import { showToast, showConfirm } from './Toast';
 
 const STEPS = [
   { key: 'pending',    label: 'Order Placed',     emoji: '🛒' },
-  { key: 'confirmed',  label: 'Confirmed',         emoji: '✅' },
+  { key: 'confirmed',  label: 'Confirmed',         emoji: <FaCheck /> },
   { key: 'processing', label: 'Processing',        emoji: '📦' },
-  { key: 'shipped',    label: 'Shipped',           emoji: '🚚' },
+  { key: 'shipped',    label: 'Shipped',           emoji: <TbTruckDelivery />
+ },
   { key: 'delivered',  label: 'Delivered',         emoji: '🎉' },
 ];
 
@@ -22,6 +28,8 @@ const OrderTracking = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [cancelling, setCancelling] = useState(false);
+  const [sellers, setSellers] = useState([]);
+  const [activeChat, setActiveChat] = useState(null); // { sellerId, sellerName }
 
   useEffect(() => {
     const fetchTracking = async () => {
@@ -32,6 +40,14 @@ const OrderTracking = () => {
         if (!res.ok) throw new Error('Order not found');
         const data = await res.json();
         setTrackingData(data);
+
+        // Fetch sellers for this order
+        try {
+          const sellersRes = await fetch(`http://127.0.0.1:8000/api/chat/${orderId}/sellers/`, {
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('access')}` }
+          });
+          if (sellersRes.ok) setSellers(await sellersRes.json());
+        } catch (_) {}
       } catch (err) {
         setError(err.message);
       } finally {
@@ -42,31 +58,32 @@ const OrderTracking = () => {
   }, [orderId]);
 
   const handleCancel = async () => {
-    if (!window.confirm('Are you sure you want to cancel this order?')) return;
-    setCancelling(true);
-    try {
-      const res = await fetch(`http://127.0.0.1:8000/api/orders/${orderId}/cancel/`, {
-        method: 'PATCH',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('access')}`,
-          'Content-Type': 'application/json'
-        }
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to cancel order');
-      setTrackingData(prev => ({
-        ...prev,
-        current_status: 'cancelled',
-        status_history: [
-          { status: 'cancelled', note: 'Cancelled by customer', changed_at: new Date().toISOString() },
-          ...(prev.status_history || [])
-        ]
-      }));
-    } catch (err) {
-      alert(err.message);
-    } finally {
-      setCancelling(false);
-    }
+    showConfirm('Are you sure you want to cancel this order?', async () => {
+      setCancelling(true);
+      try {
+        const res = await fetch(`http://127.0.0.1:8000/api/orders/${orderId}/cancel/`, {
+          method: 'PATCH',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('access')}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Failed to cancel order');
+        setTrackingData(prev => ({
+          ...prev,
+          current_status: 'cancelled',
+          status_history: [
+            { status: 'cancelled', note: 'Cancelled by customer', changed_at: new Date().toISOString() },
+            ...(prev.status_history || [])
+          ]
+        }));
+      } catch (err) {
+        showToast(err.message, 'error');
+      } finally {
+        setCancelling(false);
+      }
+    });
   };
 
   const getStepIndex = (status) => {
@@ -160,19 +177,33 @@ const OrderTracking = () => {
           </button>
         )}
 
-        {/* Chat with Seller Button */}
-        <button
-          style={{
-            marginTop: '12px', width: '100%', padding: '12px',
-            background: '#1B5E20', color: 'white', border: 'none',
-            borderRadius: '10px', fontSize: '1rem', fontWeight: 600,
-            cursor: 'pointer', display: 'flex', alignItems: 'center',
-            justifyContent: 'center', gap: '8px'
-          }}
-          onClick={() => navigate(`/chat/${orderId}`)}
-        >
-          💬 Chat with Seller
-        </button>
+        {/* Chat with Sellers */}
+        {sellers.length > 0 && (
+          <div style={{ marginTop: '16px' }}>
+            <p style={{ fontWeight: 600, color: '#1B5E20', marginBottom: '8px' }}>💬 Chat with Seller{sellers.length > 1 ? 's' : ''}:</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {sellers.map(seller => (
+                <button
+                  key={seller.id}
+                  style={{ padding: '10px 16px', background: activeChat?.sellerId === seller.id ? '#1B5E20' : '#2E7D32', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, textAlign: 'left' }}
+                  onClick={() => setActiveChat(activeChat?.sellerId === seller.id ? null : { sellerId: seller.id, sellerName: seller.username })}
+                >
+                  💬 {activeChat?.sellerId === seller.id ? 'Close chat with' : 'Chat with'} {seller.username}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Chat Widget */}
+        {activeChat && (
+          <ChatWidget
+            orderId={orderId}
+            sellerId={activeChat.sellerId}
+            sellerName={activeChat.sellerName}
+            onClose={() => setActiveChat(null)}
+          />
+        )}
 
         {/* Status History Timeline */}
         {trackingData.status_history?.length > 0 && (
@@ -191,6 +222,7 @@ const OrderTracking = () => {
           </div>
         )}
       </div>
+      <Footer />
     </div>
   );
 };
