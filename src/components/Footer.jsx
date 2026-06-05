@@ -18,6 +18,13 @@ const QUICK_LINKS = [
     { label: 'Shopping Cart', path: '/cart' },
 ];
 
+const SOCIAL_LINKS = [
+    { Icon: FaFacebookF,  href: 'https://www.facebook.com',  label: 'Facebook' },
+    { Icon: FaTwitter,    href: 'https://www.twitter.com',   label: 'Twitter' },
+    { Icon: FaInstagram,  href: 'https://www.instagram.com', label: 'Instagram' },
+    { Icon: FaLinkedinIn, href: 'https://www.linkedin.com',  label: 'LinkedIn' },
+];
+
 export default function Footer() {
     const navigate = useNavigate();
 
@@ -37,8 +44,17 @@ export default function Footer() {
                             Making green shopping accessible to everyone.
                         </p>
                         <div style={S.socials}>
-                            {[FaFacebookF, FaTwitter, FaInstagram, FaLinkedinIn].map((Icon, i) => (
-                                <a key={i} href="#" style={S.socialIcon} onMouseEnter={e => e.currentTarget.style.background = '#2E7D32'} onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}>
+                            {SOCIAL_LINKS.map(({ Icon, href, label }) => (
+                                <a
+                                    key={label}
+                                    href={href}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    aria-label={label}
+                                    style={S.socialIcon}
+                                    onMouseEnter={e => e.currentTarget.style.background = '#2E7D32'}
+                                    onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
+                                >
                                     <Icon />
                                 </a>
                             ))}

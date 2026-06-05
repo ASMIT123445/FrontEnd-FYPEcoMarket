@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { saveSection } from "../services/api/auth";
 import Header from "./Header";
+import TermsModal from "./TermsModal";
 import { 
   FaArrowLeft,
   FaArrowRight,
@@ -17,6 +18,7 @@ export default function SellerOnboarding() {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ type: "", text: "" });
+  const [termsModal, setTermsModal] = useState(null); // null | 'terms' | 'authenticity'
   const [answers, setAnswers] = useState({
     business_name: "",
     business_type: "",
@@ -154,19 +156,26 @@ export default function SellerOnboarding() {
 
   return (
     <div className="onboarding-page">
+      {/* Terms / Authenticity modal */}
+      {termsModal && (
+        <TermsModal type={termsModal} onClose={() => setTermsModal(null)} />
+      )}
+
       {/* Header */}
       <Header 
         cartCount={2}
       />
 
+      {/* Page banner — matches SellerDashboard / Profile style */}
+      <div className="onboarding-page-banner">
+        <div className="onboarding-banner-inner">
+          <h1>🌿 Seller Onboarding</h1>
+          <p>Complete your seller profile to start selling on Ecomarket</p>
+        </div>
+      </div>
+
       <div className="onboarding-container">
         <div className="onboarding-content">
-          {/* Header */}
-          <div className="onboarding-header">
-            <h1>Seller Onboarding</h1>
-            <p>Complete your seller profile to start selling on Ecomarket</p>
-          </div>
-
           {/* Progress Bar */}
           <div className="progress-section">
             <div className="progress-bar-container">
@@ -525,7 +534,14 @@ export default function SellerOnboarding() {
                       required
                     />
                     <label htmlFor="agreed_terms">
-                      I agree to the <a href="#" target="_blank">Terms & Conditions</a> *
+                      I agree to the{' '}
+                      <button
+                        type="button"
+                        className="terms-link-btn"
+                        onClick={() => setTermsModal('terms')}
+                      >
+                        Terms &amp; Conditions
+                      </button>{' '}*
                     </label>
                   </div>
 
@@ -539,7 +555,14 @@ export default function SellerOnboarding() {
                       required
                     />
                     <label htmlFor="agreed_authenticity_policy">
-                      I agree to the <a href="#" target="_blank">Authenticity Policy</a> *
+                      I agree to the{' '}
+                      <button
+                        type="button"
+                        className="terms-link-btn"
+                        onClick={() => setTermsModal('authenticity')}
+                      >
+                        Authenticity Policy
+                      </button>{' '}*
                     </label>
                   </div>
                 </div>
@@ -586,45 +609,40 @@ export default function SellerOnboarding() {
 
       <style jsx>{`
         .onboarding-page {
-          background-color: #F9F7F3;
+          background-color: #f5f6fa;
           min-height: 100vh;
-          padding: 20px;
-          background-image: url('https://images.unsplash.com/photo-1441974231531-c6227db76b6e?ixlib=rb-4.0.3&auto=format&fit=crop&w=1600&q=80');
-          background-size: cover;
-          background-position: center;
-          background-blend-mode: overlay;
-          background-color: rgba(249, 247, 243, 0.9);
-          position: relative;
+        }
+
+        .onboarding-page-banner {
+          background: linear-gradient(135deg, #1B5E20 0%, #2E7D32 60%, #388E3C 100%);
+          padding: 28px 0 32px;
+        }
+
+        .onboarding-banner-inner {
+          max-width: 800px;
+          margin: 0 auto;
+          padding: 0 20px;
+          text-align: center;
+        }
+
+        .onboarding-banner-inner h1 {
+          margin: 0 0 6px;
+          font-size: 1.9rem;
+          font-weight: 800;
+          color: #ffffff;
+          letter-spacing: 0.3px;
+        }
+
+        .onboarding-banner-inner p {
+          margin: 0;
+          font-size: 1rem;
+          color: rgba(255, 255, 255, 0.8);
         }
 
         .onboarding-container {
           max-width: 800px;
           margin: 0 auto;
-          padding-top: 80px;
-        }
-
-        .onboarding-content {
-          background-color: white;
-          border-radius: 25px;
-          padding: 40px;
-          box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
-        }
-
-        .onboarding-header {
-          text-align: center;
-          margin-bottom: 40px;
-        }
-
-        .onboarding-header h1 {
-          font-size: 2.5rem;
-          color: #1B5E20;
-          margin-bottom: 10px;
-          font-weight: 700;
-        }
-
-        .onboarding-header p {
-          color: #666666;
-          font-size: 1.1rem;
+          padding: 28px 20px 48px;
         }
 
         .progress-section {
@@ -817,8 +835,20 @@ export default function SellerOnboarding() {
           margin-top: 5px;
         }
 
-        .terms-container {
-          background-color: #f8f9fa;
+        .terms-link-btn {
+          background: none;
+          border: none;
+          padding: 0;
+          color: #2E7D32;
+          font-weight: 700;
+          font-size: inherit;
+          cursor: pointer;
+          text-decoration: underline;
+          font-family: inherit;
+        }
+        .terms-link-btn:hover { color: #1B5E20; }
+
+        .terms-container {          background-color: #f8f9fa;
           padding: 25px;
           border-radius: 12px;
           margin-bottom: 25px;
@@ -953,20 +983,16 @@ export default function SellerOnboarding() {
         }
 
         @media (max-width: 768px) {
-          .onboarding-page {
-            padding: 10px;
+          .onboarding-banner-inner h1 {
+            font-size: 1.5rem;
           }
 
           .onboarding-container {
-            padding-top: 70px;
+            padding: 20px 12px 40px;
           }
 
           .onboarding-content {
             padding: 25px 20px;
-          }
-
-          .onboarding-header h1 {
-            font-size: 2rem;
           }
 
           .progress-steps {

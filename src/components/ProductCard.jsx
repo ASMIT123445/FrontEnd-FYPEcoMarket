@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaHeart, FaStar, FaStarHalfAlt, FaShoppingCart, FaLeaf } from 'react-icons/fa';
 import { wishlistService } from '../services/wishlistService';
@@ -16,13 +17,28 @@ const renderStars = (rating) => {
 
 export default function ProductCard({ product, onWishlistToggle }) {
     const navigate = useNavigate();
-    const inWishlist = wishlistService.isInWishlist(product.id);
+    const [inWishlist, setInWishlist] = useState(() => wishlistService.isInWishlist(product.id));
+
+    // Keep in sync when wishlist changes from anywhere (same tab or other tab)
+    useEffect(() => {
+        const sync = () => setInWishlist(wishlistService.isInWishlist(product.id));
+        window.addEventListener('wishlistUpdated', sync);
+        window.addEventListener('storage', sync);
+        return () => {
+            window.removeEventListener('wishlistUpdated', sync);
+            window.removeEventListener('storage', sync);
+        };
+    }, [product.id]);
 
     const handleWishlist = (e) => {
         e.stopPropagation();
-        inWishlist
-            ? wishlistService.removeFromWishlist(product.id)
-            : wishlistService.addToWishlist(product);
+        if (inWishlist) {
+            wishlistService.removeFromWishlist(product.id);
+            setInWishlist(false);
+        } else {
+            wishlistService.addToWishlist(product);
+            setInWishlist(true);
+        }
         onWishlistToggle?.();
     };
 

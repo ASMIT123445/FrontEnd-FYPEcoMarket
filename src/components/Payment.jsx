@@ -7,7 +7,8 @@ import {
   FaReceipt, 
   FaLock, 
   FaCheck, 
-  FaCheckCircle, 
+  FaCheckCircle,
+  FaArrowLeft,
   FaSpinner,
   FaClipboardList,
   FaShoppingCart,
@@ -27,6 +28,7 @@ import { getUserFromToken } from '../utils/auth';
 import { getImageUrl, handleImageError } from '../utils/imageHelper';
 import Header from './Header';
 import '../styles/Header.css';
+import TermsModal from './TermsModal';
 import { showToast } from './Toast';
 import khaltiLogo from '../assets/khalti png.png';
 const Payment = () => {
@@ -59,6 +61,7 @@ const Payment = () => {
   });
   
   const [termsAccepted, setTermsAccepted] = useState(false);
+  const [termsModal, setTermsModal] = useState(null); // null | 'terms' | 'privacy'
   const [errors, setErrors] = useState({});
   const [showMessage, setShowMessage] = useState('');
   
@@ -148,7 +151,7 @@ const Payment = () => {
       totalItems += item.quantity;
     });
     
-    const shipping = 75; // Rs 75 flat shipping per order
+    const shipping = subtotal >= 700 ? 0 : 75; // Free delivery on orders over Rs 700
     const tax = subtotal * 0.13; // 13% VAT in Nepal
     const total = subtotal + shipping + tax - pointsDiscount;
     
@@ -416,6 +419,11 @@ const Payment = () => {
 
   return (
     <div className="payment-page">
+      {/* Terms / Privacy modal */}
+      {termsModal && (
+        <TermsModal type={termsModal} onClose={() => setTermsModal(null)} />
+      )}
+
       {/* Header */}
       <Header cartCount={totalItems} />
 
@@ -436,6 +444,19 @@ const Payment = () => {
           {showMessage}
         </div>
       )}
+
+      {/* Breadcrumb */}
+      <div className="breadcrumb">
+        <div className="container">
+          <div className="breadcrumb-content">
+            <Link to="/main"><FaArrowLeft style={{ fontSize: '0.8rem' }} /> Home</Link>
+            <span>›</span>
+            <Link to="/cart">Cart</Link>
+            <span>›</span>
+            <span>Checkout</span>
+          </div>
+        </div>
+      </div>
 
       {/* Checkout Steps */}
       <div className="checkout-steps">
@@ -466,11 +487,11 @@ const Payment = () => {
         <div className="checkout-container">
           {/* Checkout Form */}
           <div className="checkout-form">
-            {/* Shipping Information */}
+            {/* Delivery Information */}
             <div className="form-section">
               <div className="section-header">
                 <FaShippingFast />
-                <h2>Shipping Information</h2>
+                <h2>Delivery Information</h2>
               </div>
               
               <div className="form-grid">
@@ -517,7 +538,7 @@ const Payment = () => {
                 </div>
                 
                 <div className="form-group full-width">
-                  <label htmlFor="address">Shipping Address *</label>
+                  <label htmlFor="address">Delivery Address *</label>
                   <input
                     type="text"
                     id="address"
@@ -699,9 +720,16 @@ const Payment = () => {
                   <span>Rs {Math.round(subtotal)}</span>
                 </div>
                 <div className="total-row">
-                  <span>Shipping</span>
-                  <span>Rs {Math.round(shipping)}</span>
+                  <span>Delivery</span>
+                  <span style={{ color: shipping === 0 ? '#2E7D32' : undefined, fontWeight: shipping === 0 ? 700 : undefined }}>
+                    {shipping === 0 ? 'FREE' : `Rs ${Math.round(shipping)}`}
+                  </span>
                 </div>
+                {shipping > 0 && (
+                  <div className="total-row" style={{ fontSize: '0.78rem', color: '#94a3b8', marginTop: -8 }}>
+                    <span>Add Rs {Math.round(700 - subtotal)} more for free delivery</span>
+                  </div>
+                )}
                 <div className="total-row">
                   <span>Estimated Tax (VAT)</span>
                   <span>Rs {Math.round(tax)}</span>
@@ -768,7 +796,7 @@ const Payment = () => {
                   required 
                 />
                 <label htmlFor="terms">
-                  I agree to the <a href="#">Terms of Service</a> and have read the <a href="#">Privacy Policy</a>. I understand that my order supports sustainable practices.
+                  I agree to the <button type="button" className="terms-inline-btn" onClick={() => setTermsModal('terms')}>Terms of Service</button> and have read the <button type="button" className="terms-inline-btn" onClick={() => setTermsModal('privacy')}>Privacy Policy</button>. I understand that my order supports sustainable practices.
                 </label>
               </div>
               {errors.terms && <div className="error-message show">{errors.terms}</div>}
@@ -1388,6 +1416,20 @@ const Payment = () => {
           text-decoration: underline;
         }
 
+        .terms-inline-btn {
+          background: none;
+          border: none;
+          padding: 0;
+          color: #2E7D32;
+          font-weight: 600;
+          font-size: inherit;
+          cursor: pointer;
+          text-decoration: underline;
+          font-family: inherit;
+          display: inline;
+        }
+        .terms-inline-btn:hover { color: #1B5E20; }
+
         .btn-place-order {
           width: 100%;
           padding: 18px;
@@ -1631,6 +1673,10 @@ const Payment = () => {
           .step-connector {
             display: none;
           }
+
+          .summary-card {
+            position: static;
+          }
         }
 
         @media (max-width: 768px) {
@@ -1644,6 +1690,25 @@ const Payment = () => {
           
           .modal-actions {
             flex-direction: column;
+          }
+
+          .checkout-steps {
+            padding: 20px 0;
+            margin-bottom: 24px;
+          }
+
+          .steps-container {
+            justify-content: center;
+            gap: 12px;
+          }
+
+          .step-label {
+            font-size: 0.85rem;
+          }
+
+          .footer-content {
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
           }
         }
 
@@ -1661,7 +1726,31 @@ const Payment = () => {
           }
           
           .form-section {
-            padding: 20px;
+            padding: 16px;
+          }
+
+          .summary-card {
+            padding: 16px;
+          }
+
+          .points-input-group {
+            flex-direction: column;
+          }
+
+          .btn-apply-points {
+            width: 100%;
+          }
+
+          .footer-content {
+            grid-template-columns: 1fr;
+          }
+
+          .modal {
+            padding: 24px 16px;
+          }
+
+          .modal h2 {
+            font-size: 1.5rem;
           }
         }
       `}</style>

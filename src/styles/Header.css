@@ -21,7 +21,6 @@
   background-color: var(--white);
   box-shadow: var(--shadow);
   padding: 15px 0;
-  margin-bottom: 30px;
   position: sticky;
   top: 0;
   z-index: 1000;
@@ -156,7 +155,7 @@
   right: 0;
   background-color: var(--white);
   border-radius: 8px;
-  /* box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15); */
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
   padding: 8px 0;
   min-width: 180px;
   z-index: 1001;
@@ -201,14 +200,269 @@
   color: #f44336;
 }
 
-/* Responsive */
+/* ── Desktop search bar ─────────────────────────────────── */
+.desktop-search-area {
+  flex: 1;
+  max-width: 560px;
+  margin: 0 24px;
+}
+
+.search-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.header-search-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #f1f3f4;
+  border: 1px solid transparent;
+  border-radius: 24px;
+  padding: 0 8px 0 16px;
+  height: 44px;
+  transition: background 0.2s, border-color 0.2s, box-shadow 0.2s, border-radius 0.15s;
+}
+
+.header-search-bar.focused {
+  background: #fff;
+  border-color: #dfe1e5;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  border-radius: 24px;
+  border-bottom-color: #dfe1e5;
+}
+
+/* Flat bottom only when the dropdown is visible */
+.search-wrapper.dropdown-open .header-search-bar.focused {
+  border-radius: 24px 24px 0 0;
+  border-bottom-color: transparent;
+}
+
+.search-icon-left {
+  color: #9aa0a6;
+  font-size: 0.9rem;
+  flex-shrink: 0;
+}
+
+.search-input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  font-size: 0.95rem;
+  color: #202124;
+  outline: none;
+  min-width: 0;
+  padding: 0;
+}
+
+.search-input::placeholder { color: #9aa0a6; }
+
+.search-clear-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #9aa0a6;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  font-size: 0.75rem;
+  border-radius: 50%;
+  flex-shrink: 0;
+  transition: color 0.15s;
+}
+.search-clear-btn:hover { color: #555; }
+
+.search-submit-btn {
+  background: var(--primary-green);
+  color: #fff;
+  border: none;
+  border-radius: 20px;
+  padding: 6px 16px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.2s;
+  white-space: nowrap;
+}
+.search-submit-btn:hover { background: var(--dark-green); }
+
+/* ── Google-style dropdown ──────────────────────────────── */
+.search-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: #fff;
+  border: 1px solid #dfe1e5;
+  border-top: none;
+  border-radius: 0 0 24px 24px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  list-style: none;
+  margin: 0;
+  padding: 4px 0 8px;
+  z-index: 2000;
+  overflow: hidden;
+}
+
+.search-dropdown-label {
+  padding: 6px 16px 4px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #9aa0a6;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  cursor: default;
+}
+
+.search-dropdown-divider {
+  height: 1px;
+  background: #f1f3f4;
+  margin: 4px 0;
+}
+
+.search-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.search-dropdown-item:hover,
+.search-dropdown-item.active {
+  background: #f1f3f4;
+}
+
+.item-icon {
+  font-size: 0.85rem;
+  flex-shrink: 0;
+}
+.history-icon  { color: #9aa0a6; }
+.suggestion-icon { color: #9aa0a6; }
+
+.item-text {
+  flex: 1;
+  font-size: 0.92rem;
+  color: #202124;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.item-text strong {
+  font-weight: 700;
+  color: #202124;
+}
+
+.item-remove-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #c5c5c5;
+  padding: 2px 4px;
+  font-size: 0.7rem;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  opacity: 0;
+  transition: color 0.15s, opacity 0.15s;
+}
+.search-dropdown-item:hover .item-remove-btn,
+.search-dropdown-item.active .item-remove-btn { opacity: 1; }
+.item-remove-btn:hover { color: #f44336; }
+
+/* ── Mobile search area ─────────────────────────────────── */
+.mobile-search-area {
+  padding: 8px 0 4px;
+}
+
+/* Mobile-only controls — hidden on desktop */
+.mobile-search-toggle,
+.mobile-menu-toggle {
+  display: none;
+}
+
+
+/* ── Mobile menu drawer ─────────────────────────────────── */
+.mobile-menu {
+  background: var(--white);
+  border-top: 1px solid var(--border);
+  padding: 8px 0 16px;
+}
+
+.mobile-menu-user {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 6px;
+}
+
+.mobile-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 16px;
+  cursor: pointer;
+  color: var(--text-dark);
+  font-weight: 500;
+  font-size: 15px;
+  transition: background 0.2s;
+}
+
+.mobile-menu-item:hover {
+  background: rgba(46, 125, 50, 0.07);
+}
+
+.mobile-menu-item svg {
+  color: var(--text-light);
+  font-size: 16px;
+}
+
+.mobile-menu-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 8px 0;
+}
+
+.mobile-menu-item.logout {
+  color: #f44336;
+}
+
+.mobile-menu-item.logout svg {
+  color: #f44336;
+}
+
+/* ── Responsive ─────────────────────────────────────────── */
 @media (max-width: 768px) {
   .user-name {
     display: none;
   }
-  
+
   .nav-actions {
-    gap: 15px;
+    gap: 12px;
+  }
+
+  /* Hide desktop search bar and user menu */
+  .desktop-search-area {
+    display: none;
+  }
+
+  .desktop-user-menu {
+    display: none;
+  }
+
+  /* Show mobile controls */
+  .mobile-search-toggle,
+  .mobile-menu-toggle {
+    display: flex;
+  }
+
+  /* Full-width dropdown on mobile */
+  .search-dropdown {
+    border-radius: 10px;
   }
 }
 
@@ -216,4 +470,36 @@
   .logo-text {
     font-size: 20px;
   }
+
+  .nav-actions {
+    gap: 8px;
+  }
+
+  .nav-icon {
+    padding: 6px;
+  }
+
+  .nav-icon svg {
+    font-size: 18px;
+  }
+}
+
+/* ── Global: remove any gap above the sticky header ────────── */
+body {
+  margin: 0;
+  padding: 0;
+}
+
+/* ── Global: consistent top spacing for all page content ───── */
+/* Every direct sibling after the sticky header gets top padding */
+.app-header + * {
+  padding-top: 24px;
+}
+
+/* Pages that already have their own top section (breadcrumb, hero, etc.)
+   should not double-pad — override per page as needed */
+.app-header + .categories-nav,
+.app-header + .dashboard-header,
+.app-header + .breadcrumb {
+  padding-top: 0;
 }

@@ -2,20 +2,18 @@ import { useEffect, useState, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
     FaLeaf, FaHeart, FaUtensils, FaCouch, FaTools, FaPalette,
-    FaSearch, FaShoppingCart, FaChevronDown, FaFilter,
-    FaStar, FaStarHalfAlt, FaUser, FaBox,
-    FaSignOutAlt, FaSpinner
+    FaFilter, FaStar, FaStarHalfAlt, FaSpinner
 } from 'react-icons/fa';
 import { wishlistService } from '../services/wishlistService';
 import { cartService } from '../services/cartService';
 import axiosInstance from '../services/axiosInstance';
-import { getUserFromToken, logout } from '../utils/auth';
+import { getUserFromToken } from '../utils/auth';
 import { getImageUrl, handleImageError } from '../utils/imageHelper';
 import '../styles/Home.css';
 import Footer from './Footer';
 import ProductCard from './ProductCard';
-import { showConfirm } from './Toast';
 import SortDropdown from './SortDropdown';
+import Header from './Header';
 
 const PRODUCT_CATEGORIES = [
     { id: 'all', name: 'All Products', icon: <FaLeaf />, slug: '' },
@@ -34,7 +32,7 @@ export default function ViewAll() {
     const [searchQuery, setSearchQuery] = useState(() => searchParams.get('search') || '');
     const [productCategory, setProductCategory] = useState(() => searchParams.get('category') || '');
     const [ecoCategory, setEcoCategory] = useState(() => searchParams.get('eco_category') || '');
-    const [priceRange, setPriceRange] = useState(2500);
+    const [priceRange, setPriceRange] = useState(4000);
     const [minRating, setMinRating] = useState(0);
     const [inStockOnly, setInStockOnly] = useState(false);
     const [sortBy, setSortBy] = useState('featured');
@@ -43,23 +41,14 @@ export default function ViewAll() {
     const [loading, setLoading] = useState(true);
     const [ecoCategories, setEcoCategories] = useState([]);
     const [wishlistItems, setWishlistItems] = useState([]);
-    const [user, setUser] = useState(null);
-    const [cartItems, setCartItems] = useState(0);
-    const [showUserDropdown, setShowUserDropdown] = useState(false);
 
     // Load More state
     const PAGE_SIZE = 12;
     const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
-    // Init user + cart
+    // Init wishlist
     useEffect(() => {
-        const init = async () => {
-            const userInfo = getUserFromToken();
-            if (userInfo) setUser(userInfo);
-            try { setCartItems(await cartService.getCartCount()); } catch {}
-            setWishlistItems(wishlistService.getWishlist());
-        };
-        init();
+        setWishlistItems(wishlistService.getWishlist());
     }, []);
 
     // Fetch eco categories
@@ -95,7 +84,7 @@ export default function ViewAll() {
                 if (productCategory) params.append('product_category', productCategory);
                 if (ecoCategory) params.append('category', ecoCategory);
                 if (searchQuery.trim()) params.append('search', searchQuery.trim());
-                if (priceRange < 2500) params.append('max_price', priceRange);
+                if (priceRange < 4000) params.append('max_price', priceRange);
                 const url = '/products/' + (params.toString() ? '?' + params.toString() : '');
                 const res = await axiosInstance.get(url);
                 setProducts(res.data);
@@ -127,20 +116,6 @@ export default function ViewAll() {
     const visibleProducts = filteredProducts.slice(0, visibleCount);
     const hasMore = visibleCount < filteredProducts.length;
 
-    const handleSearch = (e) => {
-        if (e.key === 'Enter' || e.type === 'click') {
-            const p = new URLSearchParams();
-            if (searchQuery.trim()) p.set('search', searchQuery.trim());
-            if (productCategory) p.set('category', productCategory);
-            if (ecoCategory) p.set('eco_category', ecoCategory);
-            setSearchParams(p);
-        }
-    };
-
-    const handleLogout = () => {
-        showConfirm('Are you sure you want to logout?', () => { logout(); navigate('/login'); });
-    };
-
     const handleProductCategoryClick = (slug) => {
         const p = new URLSearchParams(searchParams);
         if (slug) p.set('category', slug); else p.delete('category');
@@ -155,7 +130,7 @@ export default function ViewAll() {
 
     const clearAll = () => {
         setSearchParams({});
-        setPriceRange(2500);
+        setPriceRange(4000);
         setMinRating(0);
         setInStockOnly(false);
         setSortBy('featured');
@@ -182,63 +157,8 @@ export default function ViewAll() {
 
     return (
         <div className="home-container">
-            {/* Header */}
-            <header className="header1">
-                <div className="container">
-                    <nav className="navbar">
-                        <a href="#" className="logo" onClick={() => navigate('/main')}>
-                            <FaLeaf className="logo-icon" />
-                            <span className="logo-text">Ecomarket</span>
-                        </a>
-                        <div className="search-bar">
-                            <FaSearch className="search-icon" onClick={handleSearch} />
-                            <input
-                                type="text"
-                                placeholder="Search products..."
-                                value={searchQuery}
-                                onChange={e => setSearchQuery(e.target.value)}
-                                onKeyDown={handleSearch}
-                            />
-                            <button className="search-button" onClick={handleSearch}>Search</button>
-                        </div>
-                        <div className="nav-actions">
-                            <div className="nav-icon" onClick={() => navigate('/wishlist')}><FaHeart /></div>
-                            <div className="nav-icon" id="cart-icon" onClick={() => navigate('/cart')}>
-                                <FaShoppingCart /><span className="badge">{cartItems}</span>
-                            </div>
-                            <div className="user-menu-container">
-                                <div className="user-menu" onClick={() => setShowUserDropdown(!showUserDropdown)}>
-                                    <div className="user-avatar">{user?.username?.[0]?.toUpperCase() || 'U'}</div>
-                                    <span className="user-name">{user?.username || 'User'}</span>
-                                    <FaChevronDown className={`dropdown-arrow ${showUserDropdown ? 'rotated' : ''}`} />
-                                </div>
-                                {showUserDropdown && (
-                                    <div className="user-dropdown">
-                                        <div className="dropdown-item" onClick={() => navigate('/profile')}>
-                                            <FaUser /> Profile
-                                        </div>
-                                        {user?.role === 'seller' && (
-                                            <div className="dropdown-item" onClick={() => navigate('/seller-dashboard')}>
-                                                <FaBox /> Seller Dashboard
-                                            </div>
-                                        )}
-                                        <div className="dropdown-item" onClick={() => navigate('/cart')}>
-                                            <FaShoppingCart /> My Orders
-                                        </div>
-                                        <div className="dropdown-item" onClick={() => navigate('/wishlist')}>
-                                            <FaHeart /> Wishlist
-                                        </div>
-                                        <div className="dropdown-divider"></div>
-                                        <div className="dropdown-item logout-item" onClick={handleLogout}>
-                                            <FaSignOutAlt /> Logout
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    </nav>
-                </div>
-            </header>
+            {/* Shared Header with pre-filled search */}
+            <Header initialQuery={searchQuery} />
 
             {/* Product Category Tabs */}
             <div className="categories-nav">
@@ -274,14 +194,14 @@ export default function ViewAll() {
                         <div className="sidebar-header">
                             <FaFilter className="sidebar-header-icon" />
                             <h3>Filters</h3>
-                            {(minRating > 0 || inStockOnly || priceRange < 2500 || ecoCategory) && (
+                            {(minRating > 0 || inStockOnly || priceRange < 4000 || ecoCategory) && (
                                 <button className="sidebar-clear-btn" onClick={clearAll}>Clear all</button>
                             )}
                         </div>
 
                         <div className="sidebar-section">
                             <h5>Price Range</h5>
-                            <input type="range" min="0" max="2500" value={priceRange} className="price-range"
+                            <input type="range" min="0" max="4000" value={priceRange} className="price-range"
                                 onChange={e => setPriceRange(Number(e.target.value))} />
                             <div className="price-values"><span>Rs 0</span><span>Rs {priceRange}</span></div>
                         </div>

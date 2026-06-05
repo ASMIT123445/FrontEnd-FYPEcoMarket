@@ -127,7 +127,7 @@ const ShoppingCart = () => {
     
     console.log(`Subtotal: ${subtotal}, Total Items: ${totalItems}`); // Debug log
     
-    const shipping = 75; // Rs 75 flat shipping per order
+    const shipping = subtotal >= 700 ? 0 : 75; // Free delivery on orders over Rs 700
     const tax = subtotal * 0.13; // 
     const total = subtotal + shipping + tax;
     const ecoSavings = subtotal * 0.02; // 2% eco savings estimate
@@ -135,7 +135,7 @@ const ShoppingCart = () => {
     return { subtotal, totalItems, shipping, tax, total, ecoSavings };
   };
 
-  // Update quantity
+    // Update quantity
   const updateQuantity = async (itemId, change) => {
     const item = cartItems.find(item => item.id === itemId);
     if (!item) return;
@@ -151,21 +151,25 @@ const ShoppingCart = () => {
       displayMessage(`Only ${item.product.stock} items available in stock`);
       return;
     }
-    
+
+    // Update local state immediately so totals recalculate instantly
+    setCartItems(prev => prev.map(cartItem =>
+      cartItem.id === itemId
+        ? { ...cartItem, quantity: newQuantity, total_price: cartItem.product.price * newQuantity }
+        : cartItem
+    ));
+
     try {
-      // Update cart using Django API
       await cartService.updateCartItem(itemId, newQuantity);
-      
-      // Update local state
-      const updatedItems = cartItems.map(cartItem => 
-        cartItem.id === itemId 
-          ? { ...cartItem, quantity: newQuantity }
-          : cartItem
-      );
-      setCartItems(updatedItems);
       displayMessage(`Updated quantity to ${newQuantity}`);
     } catch (error) {
       console.error('Error updating quantity:', error);
+      // Revert on failure
+      setCartItems(prev => prev.map(cartItem =>
+        cartItem.id === itemId
+          ? { ...cartItem, quantity: item.quantity, total_price: item.total_price }
+          : cartItem
+      ));
       displayMessage('Error updating quantity. Please try again.');
     }
   };
@@ -335,11 +339,18 @@ const ShoppingCart = () => {
                   </div>
                   
                   <div className="summary-row">
-                    <span className="summary-label">Shipping</span>
-                    <span className="summary-value">
-                      Rs {Math.round(shipping)}
+                    <span className="summary-label">Delivery</span>
+                    <span className="summary-value" style={{ color: shipping === 0 ? '#2E7D32' : undefined, fontWeight: shipping === 0 ? 700 : undefined }}>
+                      {shipping === 0 ? 'FREE' : `Rs ${Math.round(shipping)}`}
                     </span>
                   </div>
+                  {shipping > 0 && (
+                    <div className="summary-row" style={{ marginTop: -10 }}>
+                      <span className="summary-label" style={{ fontSize: '0.78rem', color: '#94a3b8' }}>
+                        Add Rs {Math.round(700 - subtotal)} more for free delivery
+                      </span>
+                    </div>
+                  )}
                   
                   <div className="summary-row">
                     <span className="summary-label">Estimated Tax </span>

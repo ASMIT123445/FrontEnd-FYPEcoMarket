@@ -43,7 +43,10 @@ import {
     FaEdit,
     FaTrash,
     FaEye,
-    FaClipboardList
+    FaClipboardList,
+    FaTrophy,
+    FaCrown,
+    FaMedal
 } from "react-icons/fa";
 import {logout, getUserFromToken} from "../utils/auth";
 import {cartService} from "../services/cartService";
@@ -55,6 +58,7 @@ import {getImageUrl, handleImageError} from "../utils/imageHelper";
 import "../styles/Home.css";
 import { showToast, showConfirm } from './Toast';
 import SortDropdown from './SortDropdown';
+import { SearchBox } from './Header';
 
 export default function Main() {
     const navigate = useNavigate();
@@ -67,7 +71,7 @@ export default function Main() {
     const [cartItems, setCartItems] = useState(0);
     const [showSidebar, setShowSidebar] = useState(false);
     const [search, setSearch] = useState("");
-    const [priceRange, setPriceRange] = useState(2500);
+    const [priceRange, setPriceRange] = useState(4000);
     const [sortBy, setSortBy] = useState("featured");
     const [selectedCategory, setSelectedCategory] = useState("");
     const [selectedEcoCategory, setSelectedEcoCategory] = useState("");
@@ -90,6 +94,10 @@ export default function Main() {
     const [sellerTab, setSellerTab] = useState('products'); // 'products' or 'orders'
     const [sellerProducts, setSellerProducts] = useState([]);
     const [sellerOrders, setSellerOrders] = useState([]);
+
+    // Leaderboard state
+    const [leaderboardData, setLeaderboardData] = useState([]);
+    const [leaderboardLoading, setLeaderboardLoading] = useState(true);
 
     // Sync category from URL params (e.g. from footer links)
     useEffect(() => {
@@ -133,10 +141,38 @@ export default function Main() {
         fetchProductCategories();
     }, []);
 
-    // Ref for horizontal scrolling
-    const productsScrollRef = useRef(null);
-    const [canScrollLeft, setCanScrollLeft] = useState(false);
-    const [canScrollRight, setCanScrollRight] = useState(true);
+    // ── Per-section carousel hook ──────────────────────────
+    const useCarousel = (deps = []) => {
+        const ref = useRef(null);
+        const [canLeft, setCanLeft] = useState(false);
+        const [canRight, setCanRight] = useState(true);
+
+        const check = () => {
+            const el = ref.current;
+            if (!el) return;
+            setCanLeft(el.scrollLeft > 0);
+            setCanRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 1);
+        };
+
+        useEffect(() => {
+            const el = ref.current;
+            if (!el) return;
+            el.addEventListener('scroll', check);
+            setTimeout(check, 120);
+            return () => el.removeEventListener('scroll', check);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        }, deps);
+
+        const scrollL = () => ref.current?.scrollBy({ left: -236, behavior: 'smooth' });
+        const scrollR = () => ref.current?.scrollBy({ left:  236, behavior: 'smooth' });
+
+        return { ref, canLeft, canRight, scrollL, scrollR };
+    };
+
+    const carouselRec    = useCarousel([recommendedProducts]);
+    const carouselTrend  = useCarousel([trendingProducts]);
+    const carouselRecent = useCarousel([products]);
+    const carouselTop    = useCarousel([topSellerProducts]);
 
     useEffect(() => {
         const initializeUser = async () => {
@@ -163,6 +199,15 @@ export default function Main() {
         };
 
         initializeUser();
+
+        // Keep wishlist count in sync when items are toggled
+        const syncWishlist = () => setWishlistItems(wishlistService.getWishlist());
+        window.addEventListener('wishlistUpdated', syncWishlist);
+        window.addEventListener('storage', syncWishlist);
+        return () => {
+            window.removeEventListener('wishlistUpdated', syncWishlist);
+            window.removeEventListener('storage', syncWishlist);
+        };
 
         const justRegistered = localStorage.getItem('justRegistered');
         if (justRegistered) {
@@ -219,7 +264,7 @@ export default function Main() {
                 if (selectedProductCategory) {
                     params.append('product_category', selectedProductCategory);
                 }
-                if (priceRange < 2500) {
+                if (priceRange < 4000) {
                     params.append('max_price', priceRange);
                 }
 
@@ -300,6 +345,14 @@ export default function Main() {
             }
         }
     }, [user, showSellerPanel, sellerTab]);
+
+    // Fetch leaderboard top 5
+    useEffect(() => {
+        axiosInstance.get('/auth/green-points/leaderboard/')
+            .then(res => setLeaderboardData(res.data.leaderboard.slice(0, 5)))
+            .catch(() => setLeaderboardData([]))
+            .finally(() => setLeaderboardLoading(false));
+    }, []);
 
     const handleDeleteProduct = async (productId, productName) => {
         showConfirm(`Delete "${productName}"? This cannot be undone.`, async () => {
@@ -415,50 +468,7 @@ export default function Main() {
         return stars;
     };
 
-    // Horizontal scroll functions
-    const scrollLeft = () => {
-        if (productsScrollRef.current) {
-            productsScrollRef.current.scrollBy({
-                left: -220, // Scroll by one card width + gap
-                behavior: 'smooth'
-            });
-        }
-    };
-
-    const scrollRight = () => {
-        if (productsScrollRef.current) {
-            productsScrollRef.current.scrollBy({
-                left: 220, // Scroll by one card width + gap
-                behavior: 'smooth'
-            });
-        }
-    };
-
-    const checkScrollButtons = () => {
-        if (productsScrollRef.current) {
-            const {scrollLeft, scrollWidth, clientWidth} = productsScrollRef.current;
-            setCanScrollLeft(scrollLeft > 0);
-            setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 1);
-        }
-    };
-
-    // Add scroll event listener
-    useEffect(() => {
-        const scrollContainer = productsScrollRef.current;
-        if (scrollContainer) {
-            scrollContainer.addEventListener('scroll', checkScrollButtons);
-            checkScrollButtons(); // Initial check
-
-            return() => {
-                scrollContainer.removeEventListener('scroll', checkScrollButtons);
-            };
-        }
-    }, [products]);
-
-    // Check scroll buttons when products change
-    useEffect(() => {
-        setTimeout(checkScrollButtons, 100);
-    }, [recommendedProducts, trendingProducts, newArrivalsProducts, topSellerProducts]);
+    // (scroll functions replaced by per-section useCarousel hooks above)
 
     const applyFilters = (list) => list
         .filter(p => minRating > 0 ? (p.rating || 0) >= minRating : true)
@@ -477,23 +487,23 @@ export default function Main() {
         });
 
     // Render product section component
-    const renderProductSection = (title, products, sectionId) => (
+    const renderProductSection = (title, products, sectionId, carousel) => (
         <div className="home-products-container" key={sectionId}>
             <div className="section-heading">
                 <h2>{title}</h2>
                 <button
                     className="view-all-btn"
-                    onClick={() => navigate(`/view-all${selectedCategory ? `?category=${selectedCategory}` : ''}`)}
+                    onClick={() => navigate(`/view-all${selectedCategory ? `?eco_category=${selectedCategory}` : ''}`)}
                 >
                     View All
                 </button>
             </div>
 
-            <button className={`home-scroll-arrow left ${!canScrollLeft ? 'disabled' : ''}`} onClick={scrollLeft} disabled={!canScrollLeft}>
+            <button className={`home-scroll-arrow left ${!carousel.canLeft ? 'disabled' : ''}`} onClick={carousel.scrollL} disabled={!carousel.canLeft}>
                 <FaChevronLeft />
             </button>
 
-            <div className="home-products-etsy-grid" ref={productsScrollRef} style={{ display: 'flex', gap: 16, overflowX: 'auto', padding: '10px 0', scrollbarWidth: 'none' }}>
+            <div className="home-products-etsy-grid" ref={carousel.ref} style={{ display: 'flex', gap: 16, overflowX: 'auto', padding: '10px 0', scrollbarWidth: 'none' }}>
                 {products.map(product => (
                     <div key={`${sectionId}-${product.id}`} style={{ flex: '0 0 220px', minWidth: 220 }}>
                         <ProductCard
@@ -504,7 +514,7 @@ export default function Main() {
                 ))}
             </div>
 
-            <button className={`home-scroll-arrow right ${!canScrollRight ? 'disabled' : ''}`} onClick={scrollRight} disabled={!canScrollRight}>
+            <button className={`home-scroll-arrow right ${!carousel.canRight ? 'disabled' : ''}`} onClick={carousel.scrollR} disabled={!carousel.canRight}>
                 <FaChevronRight />
             </button>
         </div>
@@ -522,17 +532,10 @@ export default function Main() {
                         </a>
 
                         <div className="search-bar">
-                            <FaSearch className="search-icon"
-                                onClick={handleSearch}/>
-                            <input type="text" placeholder="Search for handmade, vintage, or sustainable goods..."
-                                value={search}
-                                onChange={
-                                    (e) => setSearch(e.target.value)
-                                }
-                                onKeyDown={handleSearch}/>
-                            <button className="search-button" onClick={handleSearch}>
-                                Search
-                            </button>
+                            <SearchBox onSearch={(q) => {
+                                if (q) navigate(`/view-all?search=${encodeURIComponent(q)}`);
+                                else navigate('/view-all');
+                            }} />
                         </div>
 
                         <div className="nav-actions">
@@ -541,6 +544,9 @@ export default function Main() {
                                     () => navigate('/wishlist')
                             }>
                                 <FaHeart/>
+                                {wishlistItems.length > 0 && (
+                                    <span className="badge">{wishlistItems.length}</span>
+                                )}
                             </div>
                             <div className="nav-icon" id="cart-icon"
                                 onClick={
@@ -595,6 +601,10 @@ export default function Main() {
                                             <FaHeart/>
                                             Wishlist
                                         </div>
+                                        <div className="dropdown-item" onClick={() => navigate('/leaderboard')}>
+                                            <FaTrophy/>
+                                            Leaderboard
+                                        </div>
                                         <div className="dropdown-divider"></div>
                                         <div className="dropdown-item logout-item"
                                             onClick={handleLogout}>
@@ -648,6 +658,37 @@ export default function Main() {
                 </div>
             </div>
 
+            {/* ── Hero Banner ── */}
+            <div className="main-hero">
+                <div className="main-hero-inner">
+                    <div className="main-hero-text">
+                        <span className="main-hero-eyebrow">🌿 Sustainable Shopping</span>
+                        <h1 className="main-hero-title">
+                            Shop Green,<br />Live Better
+                        </h1>
+                        <p className="main-hero-sub">
+                            Discover thousands of eco-friendly products — from organic food to recycled goods — all in one place.
+                        </p>
+                    </div>
+                    <div className="main-hero-stats">
+                        <div className="hero-stat">
+                            <span className="hero-stat-num">500+</span>
+                            <span className="hero-stat-label">Eco Products</span>
+                        </div>
+                        <div className="hero-stat-divider" />
+                        <div className="hero-stat">
+                            <span className="hero-stat-num">100%</span>
+                            <span className="hero-stat-label">Verified Sellers</span>
+                        </div>
+                        <div className="hero-stat-divider" />
+                        <div className="hero-stat">
+                            <span className="hero-stat-num">🌱</span>
+                            <span className="hero-stat-label">Carbon Neutral</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             {/* Main Content */}
             <div className="home-main-container">
                 <div className="page-layout">
@@ -656,11 +697,11 @@ export default function Main() {
                         <div className="sidebar-header">
                             <FaFilter className="sidebar-header-icon" />
                             <h3>Filters</h3>
-                            {(minRating > 0 || inStockOnly || priceRange < 2500 || selectedCategory) && (
+                            {(minRating > 0 || inStockOnly || priceRange < 4000 || selectedCategory) && (
                                 <button className="sidebar-clear-btn" onClick={() => {
                                     setMinRating(0);
                                     setInStockOnly(false);
-                                    setPriceRange(2500);
+                                    setPriceRange(4000);
                                     setSelectedCategory('');
                                 }}>Clear all</button>
                             )}
@@ -668,7 +709,7 @@ export default function Main() {
 
                         <div className="sidebar-section">
                             <h5>Price Range</h5>
-                            <input type="range" min="0" max="2500"
+                            <input type="range" min="0" max="4000"
                                 value={priceRange} className="price-range"
                                 onChange={(e) => setPriceRange(Number(e.target.value))} />
                             <div className="price-values">
@@ -736,8 +777,8 @@ export default function Main() {
                         </div>
 
                         {/* Multiple Product Sections */}
-                        {renderProductSection("Recommended for you", applyFilters(recommendedProducts), "recommended")}
-                        {renderProductSection("Trending Now", applyFilters(trendingProducts), "trending")}
+                        {renderProductSection("Recommended for you", applyFilters(recommendedProducts), "recommended", carouselRec)}
+                        {renderProductSection("Trending Now", applyFilters(trendingProducts), "trending", carouselTrend)}
 
                         {/* Recently Added */}
                         <div className="home-products-container">
@@ -748,9 +789,9 @@ export default function Main() {
                                     View All
                                 </button>
                             </div>
-                            <button className={`home-scroll-arrow left ${!canScrollLeft ? 'disabled' : ''}`}
-                                onClick={scrollLeft} disabled={!canScrollLeft}><FaChevronLeft/></button>
-                            <div className="home-products-etsy-grid" ref={productsScrollRef}
+                            <button className={`home-scroll-arrow left ${!carouselRecent.canLeft ? 'disabled' : ''}`}
+                                onClick={carouselRecent.scrollL} disabled={!carouselRecent.canLeft}><FaChevronLeft/></button>
+                            <div className="home-products-etsy-grid" ref={carouselRecent.ref}
                                 style={{ display: 'flex', gap: 16, overflowX: 'auto', padding: '10px 0', scrollbarWidth: 'none' }}>
                                 {applyFilters(products).map(product => (
                                     <div key={product.id} style={{ flex: '0 0 220px', minWidth: 220 }}>
@@ -759,8 +800,8 @@ export default function Main() {
                                     </div>
                                 ))}
                             </div>
-                            <button className={`home-scroll-arrow right ${!canScrollRight ? 'disabled' : ''}`}
-                                onClick={scrollRight} disabled={!canScrollRight}><FaChevronRight/></button>
+                            <button className={`home-scroll-arrow right ${!carouselRecent.canRight ? 'disabled' : ''}`}
+                                onClick={carouselRecent.scrollR} disabled={!carouselRecent.canRight}><FaChevronRight/></button>
                         </div>
 
                         {/* Top Seller */}
@@ -772,9 +813,9 @@ export default function Main() {
                                     View All
                                 </button>
                             </div>
-                            <button className={`home-scroll-arrow left ${!canScrollLeft ? 'disabled' : ''}`}
-                                onClick={scrollLeft} disabled={!canScrollLeft}><FaChevronLeft/></button>
-                            <div className="home-products-etsy-grid" ref={productsScrollRef}
+                            <button className={`home-scroll-arrow left ${!carouselTop.canLeft ? 'disabled' : ''}`}
+                                onClick={carouselTop.scrollL} disabled={!carouselTop.canLeft}><FaChevronLeft/></button>
+                            <div className="home-products-etsy-grid" ref={carouselTop.ref}
                                 style={{ display: 'flex', gap: 16, overflowX: 'auto', padding: '10px 0', scrollbarWidth: 'none' }}>
                                 {applyFilters(topSellerProducts).map(product => (
                                     <div key={product.id} style={{ flex: '0 0 220px', minWidth: 220 }}>
@@ -783,8 +824,8 @@ export default function Main() {
                                     </div>
                                 ))}
                             </div>
-                            <button className={`home-scroll-arrow right ${!canScrollRight ? 'disabled' : ''}`}
-                                onClick={scrollRight} disabled={!canScrollRight}><FaChevronRight/></button>
+                            <button className={`home-scroll-arrow right ${!carouselTop.canRight ? 'disabled' : ''}`}
+                                onClick={carouselTop.scrollR} disabled={!carouselTop.canRight}><FaChevronRight/></button>
                         </div>
                     </div>
                 </div>
@@ -799,7 +840,6 @@ export default function Main() {
                 </Link>
             )
         }
-
             {/* Footer */}
             <Footer />
         </div>

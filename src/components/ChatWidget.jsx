@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { FaImage, FaTimes } from 'react-icons/fa';
 import axiosInstance from '../services/axiosInstance';
 import { getUserFromToken } from '../utils/auth';
 
@@ -13,10 +14,13 @@ import { getUserFromToken } from '../utils/auth';
 const ChatWidget = ({ orderId, sellerId, sellerName, onClose }) => {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
+  const [imageFile, setImageFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [minimized, setMinimized] = useState(false);
   const messagesEndRef = useRef(null);
+  const fileInputRef = useRef(null);
   const currentUser = getUserFromToken();
 
   const fetchMessages = async () => {
@@ -43,19 +47,45 @@ const ChatWidget = ({ orderId, sellerId, sellerName, onClose }) => {
     }
   }, [messages, minimized]);
 
+  const handleImageSelect = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setImageFile(file);
+    setImagePreview(URL.createObjectURL(file));
+  };
+
+  const clearImage = () => {
+    setImageFile(null);
+    setImagePreview(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
   const sendMessage = async (e) => {
     e.preventDefault();
-    if (!input.trim()) return;
+    if (!input.trim() && !imageFile) return;
+
     const text = input.trim();
+    const file = imageFile;
     setInput('');
+    clearImage();
+
     try {
-      const res = await axiosInstance.post(`/chat/${orderId}/${sellerId}/send/`, { content: text });
+      const form = new FormData();
+      if (text) form.append('content', text);
+      if (file) form.append('image', file);
+
+      const res = await axiosInstance.post(
+        `/chat/${orderId}/${sellerId}/send/`,
+        form,
+        { headers: { 'Content-Type': 'multipart/form-data' } }
+      );
       setMessages(prev => [...prev, res.data]);
       setError('');
     } catch (err) {
       const msg = err.response?.data?.error || err.message || 'Failed to send';
       setError(msg);
-      setInput(text); // restore so user doesn't lose their message
+      // restore on failure
+      setInput(text);
     }
   };
 
@@ -92,7 +122,15 @@ const ChatWidget = ({ orderId, sellerId, sellerName, onClose }) => {
                   <div style={{ maxWidth: '80%' }}>
                     {!mine && <div style={S.senderName}>{msg.sender_name}</div>}
                     <div style={{ ...S.bubble, ...(mine ? S.mine : S.theirs) }}>
-                      {msg.content}
+                      {msg.image_url && (
+                        <img
+                          src={msg.image_url}
+                          alt="attachment"
+                          style={S.msgImage}
+                          onClick={() => window.open(msg.image_url, '_blank')}
+                        />
+                      )}
+                      {msg.content && <span>{msg.content}</span>}
                     </div>
                     <div style={{ ...S.time, textAlign: mine ? 'right' : 'left' }}>
                       {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -104,8 +142,33 @@ const ChatWidget = ({ orderId, sellerId, sellerName, onClose }) => {
             <div ref={messagesEndRef} />
           </div>
 
+          {/* Image preview strip */}
+          {imagePreview && (
+            <div style={S.previewStrip}>
+              <div style={S.previewThumb}>
+                <img src={imagePreview} alt="preview" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '5px' }} />
+                <button style={S.removePreview} onClick={clearImage}><FaTimes /></button>
+              </div>
+            </div>
+          )}
+
           {/* Input */}
           <form onSubmit={sendMessage} style={S.inputRow}>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              style={{ display: 'none' }}
+              onChange={handleImageSelect}
+            />
+            <button
+              type="button"
+              style={S.attachBtn}
+              onClick={() => fileInputRef.current?.click()}
+              title="Attach image"
+            >
+              <FaImage />
+            </button>
             <input
               style={S.input}
               value={input}
@@ -113,7 +176,7 @@ const ChatWidget = ({ orderId, sellerId, sellerName, onClose }) => {
               placeholder="Aa"
               autoFocus
             />
-            <button type="submit" style={S.sendBtn} disabled={!input.trim()}>➤</button>
+            <button type="submit" style={S.sendBtn} disabled={!input.trim() && !imageFile}>➤</button>
           </form>
         </>
       )}
@@ -146,11 +209,16 @@ const S = {
   body: { height: '280px', overflowY: 'auto', padding: '12px', background: '#f9f9f9' },
   hint: { textAlign: 'center', color: '#aaa', fontSize: '0.85rem', marginTop: '80px' },
   senderName: { fontSize: '0.7rem', color: '#888', marginBottom: '2px', marginLeft: '4px' },
-  bubble: { padding: '8px 12px', borderRadius: '18px', fontSize: '0.9rem', lineHeight: 1.4, wordBreak: 'break-word' },
+  bubble: { padding: '8px 12px', borderRadius: '18px', fontSize: '0.9rem', lineHeight: 1.4, wordBreak: 'break-word', display: 'flex', flexDirection: 'column', gap: '5px' },
   mine: { background: '#2E7D32', color: 'white', borderBottomRightRadius: '4px' },
   theirs: { background: '#e4e6eb', color: '#333', borderBottomLeftRadius: '4px' },
+  msgImage: { maxWidth: '180px', maxHeight: '160px', borderRadius: '8px', cursor: 'pointer', display: 'block' },
   time: { fontSize: '0.65rem', color: '#bbb', margin: '2px 4px 0' },
-  inputRow: { display: 'flex', gap: '6px', padding: '8px 10px', borderTop: '1px solid #eee', background: 'white' },
+  previewStrip: { padding: '6px 10px', borderTop: '1px solid #eee', background: '#fafafa' },
+  previewThumb: { position: 'relative', width: '50px', height: '50px', display: 'inline-block' },
+  removePreview: { position: 'absolute', top: -5, right: -5, background: '#e53935', color: 'white', border: 'none', borderRadius: '50%', width: '16px', height: '16px', cursor: 'pointer', fontSize: '0.55rem', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 },
+  inputRow: { display: 'flex', gap: '5px', padding: '8px 10px', borderTop: '1px solid #eee', background: 'white', alignItems: 'center' },
+  attachBtn: { background: '#f0f2f5', border: 'none', borderRadius: '50%', width: '32px', height: '32px', cursor: 'pointer', color: '#555', fontSize: '0.9rem', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   input: {
     flex: 1, padding: '8px 12px', border: '1px solid #e0e0e0', borderRadius: '20px',
     fontSize: '0.9rem', outline: 'none', background: '#f0f2f5'
@@ -158,7 +226,7 @@ const S = {
   sendBtn: {
     background: '#2E7D32', color: 'white', border: 'none', borderRadius: '50%',
     width: '34px', height: '34px', cursor: 'pointer', fontSize: '1rem',
-    display: 'flex', alignItems: 'center', justifyContent: 'center'
+    display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
   },
 };
 

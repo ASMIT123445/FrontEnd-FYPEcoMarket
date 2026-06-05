@@ -1,7 +1,17 @@
 import { Link } from "react-router-dom";
 import "../styles/LandingPage.css";
+import { getUserFromToken} from "../utils/auth";
+import { useEffect,useState } from "react";
+
+
 
 export default function LandingPage() {
+  const [isloggedIn, setIsLoggedIn] = useState(false)
+  useEffect(()=>{
+    if(getUserFromToken()){
+      setIsLoggedIn(true)
+    }
+  },[])
   const toggleMenu = () => {
     document.querySelector(".nav-links").classList.toggle("active");
   };
@@ -24,10 +34,16 @@ export default function LandingPage() {
               <li><a href="#join">Join Us</a></li>
             </ul>
 
-            <div className="nav-actions">
+        
+
+           {!isloggedIn ?  <div className="nav-actions">
               <Link to="/login" className="btn btn-login">Login</Link>
               <Link to="/register" className="btn btn-signup">Sign Up</Link>
-            </div>
+            </div>:
+             <div className="nav-actions">
+              <Link to="/main" className="btn btn-login">Go to dashboard</Link>
+            </div>}
+
 
             <div className="mobile-toggle" onClick={toggleMenu}>
               <i className="fas fa-bars"></i>

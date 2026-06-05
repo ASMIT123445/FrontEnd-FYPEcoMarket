@@ -37,6 +37,7 @@ class WishlistService {
                 });
                 
                 localStorage.setItem(this.storageKey, JSON.stringify(wishlist));
+                window.dispatchEvent(new Event('wishlistUpdated'));
                 return true;
             }
             return false; // Already in wishlist
@@ -52,6 +53,7 @@ class WishlistService {
             const wishlist = this.getWishlist();
             const filteredWishlist = wishlist.filter(item => item.id !== productId);
             localStorage.setItem(this.storageKey, JSON.stringify(filteredWishlist));
+            window.dispatchEvent(new Event('wishlistUpdated'));
             return true;
         } catch (error) {
             console.error('Error removing from wishlist:', error);

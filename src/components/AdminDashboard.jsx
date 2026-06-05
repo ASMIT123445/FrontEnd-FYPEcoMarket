@@ -3,6 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import axiosInstance from '../services/axiosInstance';
 import { getUserFromToken } from '../utils/auth';
 import { showToast, showConfirm } from './Toast';
+import {
+  LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
+  XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
+} from 'recharts';
 
 const PAGE_SIZE = 15;
 
@@ -76,6 +80,7 @@ export default function AdminDashboard() {
   const [newCatType, setNewCatType] = useState('Eco');
 
   const [isReady, setIsReady] = useState(false);
+  const [chartData, setChartData] = useState(null);
 
   // ── per-tab pagination ──
   const usersPag     = usePage(users);
@@ -110,7 +115,17 @@ export default function AdminDashboard() {
     else if (tab === 'Categories') fetchCategories();
   }, [tab, isReady]);
 
-  const fetchStats = async () => { const r = await axiosInstance.get('/admin-panel/stats/'); setStats(r.data); };
+  const fetchStats = async () => {
+    const r = await axiosInstance.get('/admin-panel/stats/');
+    setStats(r.data);
+    // fetch chart data alongside stats
+    try {
+      const c = await axiosInstance.get('/admin-panel/charts/');
+      setChartData(c.data);
+    } catch (e) {
+      console.error('Chart data fetch failed', e);
+    }
+  };
   const fetchUsers = async () => { const r = await axiosInstance.get('/admin-panel/users/'); setUsers(r.data); };
   const fetchCustomers = async () => { const r = await axiosInstance.get('/admin-panel/customers/'); setCustomers(r.data); };
   const fetchSellers = async () => { const r = await axiosInstance.get('/admin-panel/sellers/'); setSellers(r.data); };
@@ -235,21 +250,95 @@ export default function AdminDashboard() {
 
         {/* DASHBOARD */}
         {tab === 'Dashboard' && stats && (
-          <div style={S.grid}>
-            {[
-              { label: 'Total Users', value: stats.total_users, color: '#4CAF50' },
-              { label: 'Total Sellers', value: stats.total_sellers, color: '#2196F3' },
-              { label: 'Pending Sellers', value: stats.pending_sellers, color: '#FF9800' },
-              { label: 'Total Products', value: stats.total_products, color: '#9C27B0' },
-              { label: 'Pending Products', value: stats.pending_products, color: '#f44336' },
-              { label: 'Total Orders', value: stats.total_orders, color: '#00BCD4' },
-              { label: 'Total Revenue', value: `Rs ${Math.round(stats.total_revenue)}`, color: '#4CAF50' },
-            ].map(c => (
-              <div key={c.label} style={{ ...S.card, borderTop: `4px solid ${c.color}` }}>
-                <div style={{ fontSize: '2rem', fontWeight: 700, color: c.color }}>{c.value}</div>
-                <div style={{ color: '#666', fontSize: '0.9rem' }}>{c.label}</div>
+          <div>
+            {/* ── Stat Cards ── */}
+            <div style={S.grid}>
+              {[
+                { label: 'Total Users',       value: stats.total_users,                        color: '#4CAF50', icon: '👥' },
+                { label: 'Total Sellers',     value: stats.total_sellers,                      color: '#2196F3', icon: '🏪' },
+                { label: 'Pending Sellers',   value: stats.pending_sellers,                    color: '#FF9800', icon: '⏳' },
+                { label: 'Total Products',    value: stats.total_products,                     color: '#9C27B0', icon: '📦' },
+                { label: 'Pending Products',  value: stats.pending_products,                   color: '#f44336', icon: '🔍' },
+                { label: 'Total Orders',      value: stats.total_orders,                       color: '#00BCD4', icon: '🛒' },
+                { label: 'Total Revenue',     value: `Rs ${Math.round(stats.total_revenue)}`,  color: '#4CAF50', icon: '💰' },
+              ].map(c => (
+                <div key={c.label} style={{ ...S.card, borderTop: `4px solid ${c.color}` }}>
+                  <div style={{ fontSize: '1.5rem', marginBottom: '6px' }}>{c.icon}</div>
+                  <div style={{ fontSize: '1.8rem', fontWeight: 700, color: c.color }}>{c.value}</div>
+                  <div style={{ color: '#666', fontSize: '0.85rem', marginTop: '4px' }}>{c.label}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* ── Charts (4 figures) ── */}
+            {chartData && (
+              <div style={{ marginTop: '32px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+
+                {/* Row 1: Revenue line + Orders bar */}
+                <div style={S.chartRow}>
+                  <div style={S.chartBox}>
+                    <h3 style={S.chartTitle}>📈 Monthly Revenue (Rs)</h3>
+                    <ResponsiveContainer width="100%" height={250}>
+                      <LineChart data={chartData.monthly_revenue} margin={{ top: 10, right: 20, left: 10, bottom: 5 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                        <XAxis dataKey="month" tick={{ fontSize: 11 }} />
+                        <YAxis tick={{ fontSize: 11 }} tickFormatter={v => `Rs ${v}`} />
+                        <Tooltip formatter={v => [`Rs ${Math.round(v)}`, 'Revenue']} />
+                        <Line type="monotone" dataKey="revenue" stroke="#2E7D32" strokeWidth={2.5}
+                          dot={{ fill: '#2E7D32', r: 4 }} activeDot={{ r: 6 }} />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+
+                  <div style={S.chartBox}>
+                    <h3 style={S.chartTitle}>📦 Monthly Orders</h3>
+                    <ResponsiveContainer width="100%" height={250}>
+                      <BarChart data={chartData.monthly_orders} margin={{ top: 10, right: 20, left: 10, bottom: 5 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                        <XAxis dataKey="month" tick={{ fontSize: 11 }} />
+                        <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
+                        <Tooltip />
+                        <Bar dataKey="orders" fill="#1565c0" radius={[4, 4, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+
+                {/* Row 2: Seller pie + Product pie */}
+                <div style={S.chartRow}>
+                  <div style={S.chartBox}>
+                    <h3 style={S.chartTitle}>🏪 Seller Verification Status</h3>
+                    <ResponsiveContainer width="100%" height={250}>
+                      <PieChart>
+                        <Pie data={chartData.seller_pie} cx="50%" cy="50%" outerRadius={85}
+                          dataKey="value" label={({ name, value }) => `${name}: ${value}`} labelLine>
+                          <Cell fill="#2E7D32" />
+                          <Cell fill="#FF9800" />
+                        </Pie>
+                        <Tooltip />
+                        <Legend />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+
+                  <div style={S.chartBox}>
+                    <h3 style={S.chartTitle}>📦 Product Verification Status</h3>
+                    <ResponsiveContainer width="100%" height={250}>
+                      <PieChart>
+                        <Pie data={chartData.product_pie} cx="50%" cy="50%" outerRadius={85}
+                          dataKey="value" label={({ name, value }) => `${name}: ${value}`} labelLine>
+                          <Cell fill="#4CAF50" />
+                          <Cell fill="#f44336" />
+                        </Pie>
+                        <Tooltip />
+                        <Legend />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+
               </div>
-            ))}
+            )}
           </div>
         )}
 
@@ -555,4 +644,7 @@ const S = {
   select: { padding: '4px 8px', borderRadius: '6px', border: '1px solid #ddd', fontSize: '0.82rem' },
   inputEdit: { width: '100%', padding: '8px 10px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '0.88rem', boxSizing: 'border-box' },
   label: { display: 'block', fontSize: '0.8rem', color: '#666', marginBottom: '4px', fontWeight: 600 },
+  chartRow: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' },
+  chartBox: { background: 'white', borderRadius: '12px', padding: '20px 24px', boxShadow: '0 2px 8px rgba(0,0,0,0.07)' },
+  chartTitle: { color: '#1B5E20', fontSize: '1rem', fontWeight: 700, marginBottom: '16px', marginTop: 0 },
 };

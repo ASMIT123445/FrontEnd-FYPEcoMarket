@@ -342,9 +342,15 @@ export default function AddProduct() {
   return (
     <div className="add-product-page">
       {/* Header */}
-      <Header 
-        cartCount={2}
-      />
+      <Header cartCount={2} />
+
+      {/* Page banner — consistent with SellerDashboard / SellerOnboarding */}
+      <div className="add-product-banner">
+        <div className="add-product-banner-inner">
+          <h1>{isEditMode ? '✏️ Edit Product' : '📦 Add New Product'}</h1>
+          <p>{isEditMode ? 'Update your product information' : 'Add your eco-friendly product to the marketplace'}</p>
+        </div>
+      </div>
 
       {/* Unverified seller block */}
       {sellerVerified === false && (
@@ -376,11 +382,6 @@ export default function AddProduct() {
       {sellerVerified === true && (
         <div className="add-product-container">
         <div className="add-product-content">
-          {/* Header */}
-          <div className="add-product-header">
-            <h1>{isEditMode ? 'Edit Product' : 'Add New Product'}</h1>
-            <p>{isEditMode ? 'Update your product information' : 'Add your eco-friendly product to the marketplace'}</p>
-          </div>
 
           {/* Success/Error Messages */}
           {message.type === "success" && (
@@ -565,45 +566,46 @@ export default function AddProduct() {
 
       <style jsx>{`
         .add-product-page {
-          background-color: #F9F7F3;
+          background-color: #f5f6fa;
           min-height: 100vh;
-          padding: 20px;
-          background-image: url('https://images.unsplash.com/photo-1441974231531-c6227db76b6e?ixlib=rb-4.0.3&auto=format&fit=crop&w=1600&q=80');
-          background-size: cover;
-          background-position: center;
-          background-blend-mode: overlay;
-          background-color: rgba(249, 247, 243, 0.9);
-          position: relative;
+        }
+
+        .add-product-banner {
+          background: linear-gradient(135deg, #1B5E20 0%, #2E7D32 60%, #388E3C 100%);
+          padding: 28px 0 32px;
+        }
+
+        .add-product-banner-inner {
+          max-width: 700px;
+          margin: 0 auto;
+          padding: 0 20px;
+          text-align: center;
+        }
+
+        .add-product-banner-inner h1 {
+          margin: 0 0 6px;
+          font-size: 1.9rem;
+          font-weight: 800;
+          color: #ffffff;
+        }
+
+        .add-product-banner-inner p {
+          margin: 0;
+          font-size: 1rem;
+          color: rgba(255, 255, 255, 0.8);
         }
 
         .add-product-container {
           max-width: 700px;
           margin: 0 auto;
-          padding-top: 80px;
+          padding: 28px 20px 48px;
         }
 
         .add-product-content {
           background-color: white;
-          border-radius: 25px;
-          padding: 40px;
-          box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
-        }
-
-        .add-product-header {
-          text-align: center;
-          margin-bottom: 30px;
-        }
-
-        .add-product-header h1 {
-          font-size: 2.5rem;
-          color: #1B5E20;
-          margin-bottom: 10px;
-          font-weight: 700;
-        }
-
-        .add-product-header p {
-          color: #666666;
-          font-size: 1.1rem;
+          border-radius: 16px;
+          padding: 36px 40px;
+          box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
         }
 
         .alert {
@@ -768,20 +770,16 @@ export default function AddProduct() {
         }
 
         @media (max-width: 768px) {
-          .add-product-page {
-            padding: 10px;
+          .add-product-banner-inner h1 {
+            font-size: 1.5rem;
           }
 
           .add-product-container {
-            padding-top: 70px;
+            padding: 20px 12px 40px;
           }
 
           .add-product-content {
-            padding: 25px 20px;
-          }
-
-          .add-product-header h1 {
-            font-size: 2rem;
+            padding: 24px 20px;
           }
 
           .form-row {

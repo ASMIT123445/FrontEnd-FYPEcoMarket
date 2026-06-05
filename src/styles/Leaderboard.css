@@ -1,0 +1,323 @@
+.leaderboard-page {
+  min-height: 100vh;
+  background: #f4f6f3;
+}
+
+.leaderboard-container {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 0 16px 60px;
+}
+
+/* Back button */
+.lb-back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: none;
+  border: 1px solid #2E7D32;
+  color: #2E7D32;
+  padding: 7px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin: 20px 0 24px;
+  transition: background 0.2s;
+}
+.lb-back-btn:hover { background: #e8f5e9; }
+
+/* Title row */
+.lb-title-row {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  margin-bottom: 28px;
+}
+.lb-trophy-icon {
+  font-size: 2.8rem;
+  color: #F5A623;
+  flex-shrink: 0;
+}
+.lb-title-row h1 {
+  margin: 0 0 4px;
+  font-size: 1.7rem;
+  color: #1B5E20;
+  font-weight: 800;
+}
+.lb-title-row p {
+  margin: 0;
+  color: #666;
+  font-size: 0.95rem;
+}
+
+/* My rank card */
+.lb-my-rank-card {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  background: linear-gradient(135deg, #2E7D32 0%, #1B5E20 100%);
+  color: white;
+  border-radius: 14px;
+  padding: 20px 24px;
+  margin-bottom: 32px;
+  box-shadow: 0 4px 16px rgba(46, 125, 50, 0.3);
+}
+.lb-leaf {
+  font-size: 2rem;
+  opacity: 0.85;
+  flex-shrink: 0;
+}
+.lb-my-rank-label {
+  font-size: 0.78rem;
+  opacity: 0.8;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 3px;
+}
+.lb-my-rank-value {
+  font-size: 1.6rem;
+  font-weight: 800;
+}
+.lb-my-rank-divider {
+  width: 1px;
+  height: 40px;
+  background: rgba(255,255,255,0.3);
+  margin: 0 4px;
+}
+
+/* Loading / error / empty */
+.lb-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 60px 0;
+  color: #888;
+}
+.lb-spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid #e0e0e0;
+  border-top-color: #2E7D32;
+  border-radius: 50%;
+  animation: lbSpin 0.8s linear infinite;
+}
+@keyframes lbSpin { to { transform: rotate(360deg); } }
+
+.lb-error {
+  text-align: center;
+  padding: 40px;
+  color: #f44336;
+  font-weight: 600;
+}
+.lb-empty {
+  text-align: center;
+  padding: 60px 20px;
+  color: #888;
+  font-size: 1rem;
+}
+
+/* ── Podium ─────────────────────────────────────────────── */
+.lb-podium {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 36px;
+  padding: 0 8px;
+}
+
+.podium-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+  max-width: 160px;
+}
+
+.podium-crown {
+  font-size: 1.6rem;
+  color: #F5A623;
+  margin-bottom: 6px;
+}
+
+.podium-avatar {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: #4CAF50;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.3rem;
+  font-weight: 800;
+  margin-bottom: 6px;
+  border: 3px solid #c8e6c9;
+}
+.podium-avatar.gold {
+  background: linear-gradient(135deg, #F5A623, #e67e00);
+  border-color: #ffe082;
+  width: 62px;
+  height: 62px;
+  font-size: 1.5rem;
+}
+
+.podium-name {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #333;
+  text-align: center;
+  margin-bottom: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+.podium-points {
+  font-size: 0.75rem;
+  color: #2E7D32;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.podium-block {
+  width: 100%;
+  border-radius: 8px 8px 0 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: white;
+}
+.first-block  { height: 80px; background: linear-gradient(180deg, #F5A623, #e67e00); }
+.second-block { height: 60px; background: linear-gradient(180deg, #9e9e9e, #757575); }
+.third-block  { height: 44px; background: linear-gradient(180deg, #a1887f, #795548); }
+
+/* ── Ranked list ────────────────────────────────────────── */
+.lb-table {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.lb-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: white;
+  border-radius: 10px;
+  padding: 14px 16px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.lb-row:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+/* Highlight current user */
+.lb-row--me {
+  background: linear-gradient(135deg, #e8f5e9, #f1f8e9);
+  border: 1.5px solid #a5d6a7;
+}
+
+/* Top 3 left accent */
+.lb-row--top1 { border-left: 4px solid #F5A623; }
+.lb-row--top2 { border-left: 4px solid #9e9e9e; }
+.lb-row--top3 { border-left: 4px solid #a1887f; }
+
+.lb-rank {
+  width: 36px;
+  text-align: center;
+  flex-shrink: 0;
+}
+.rank-crown { color: #F5A623; font-size: 1.3rem; }
+.rank-medal { font-size: 1.2rem; }
+.rank-medal.silver { color: #9e9e9e; }
+.rank-medal.bronze { color: #a1887f; }
+.rank-number {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #888;
+}
+
+.lb-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #4CAF50;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+.lb-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.lb-name {
+  font-weight: 700;
+  color: #222;
+  font-size: 0.95rem;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.lb-you-badge {
+  background: #2E7D32;
+  color: white;
+  font-size: 0.65rem;
+  font-weight: 800;
+  padding: 2px 7px;
+  border-radius: 10px;
+  letter-spacing: 0.3px;
+  flex-shrink: 0;
+}
+.lb-username {
+  font-size: 0.78rem;
+  color: #999;
+}
+
+.lb-points {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-weight: 700;
+  color: #2E7D32;
+  font-size: 0.9rem;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.lb-points-leaf {
+  font-size: 0.8rem;
+  opacity: 0.8;
+}
+
+/* ── Responsive ─────────────────────────────────────────── */
+@media (max-width: 480px) {
+  .lb-title-row h1 { font-size: 1.35rem; }
+  .lb-my-rank-card { padding: 16px; gap: 14px; }
+  .lb-my-rank-value { font-size: 1.3rem; }
+
+  .podium-avatar { width: 44px; height: 44px; font-size: 1.1rem; }
+  .podium-avatar.gold { width: 52px; height: 52px; font-size: 1.2rem; }
+  .podium-name { font-size: 0.75rem; }
+
+  .lb-row { padding: 12px; gap: 10px; }
+  .lb-avatar { width: 34px; height: 34px; font-size: 0.9rem; }
+  .lb-name { font-size: 0.88rem; }
+  .lb-points { font-size: 0.82rem; }
+}

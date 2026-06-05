@@ -18,21 +18,38 @@
 }
 
 .btn-back {
-  background: rgba(255, 255, 255, 0.2);
-  color: white;
+  background: white;
+  color: #1B5E20;
   border: none;
   padding: 10px 20px;
-  border-radius: 5px;
+  border-radius: 8px;
   cursor: pointer;
   display: flex;
   align-items: center;
   gap: 8px;
   margin-bottom: 20px;
-  font-weight: 600;
+  font-weight: 700;
+  font-size: 0.9rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  transition: background 0.2s, transform 0.2s;
 }
 
 .btn-back:hover {
-  background: rgba(255, 255, 255, 0.3);
+  background: #f0faf0;
+  transform: translateX(-3px);
+}
+
+/* Ensure visibility on dark green header */
+.dashboard-header .btn-back {
+  background: white !important;
+  color: #1B5E20 !important;
+  border: none;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.25);
+}
+
+.dashboard-header .btn-back:hover {
+  background: #f0faf0 !important;
+  color: #1B5E20 !important;
 }
 
 .dashboard-header h1 {
@@ -602,3 +619,96 @@
 .status-select.cash_payment { background: #e3f2fd; color: #1565C0; }
 .status-select.completed    { background: #e8f5e9; color: #2E7D32; }
 .status-select.failed       { background: #ffebee; color: #f44336; }
+
+/* ── Mobile order cards (replaces table on small screens) ── */
+.order-card-mobile {
+  display: none;
+}
+
+@media (max-width: 640px) {
+  /* Hide the desktop table */
+  .orders-table table {
+    display: none;
+  }
+
+  /* Show card layout */
+  .order-card-mobile {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .order-card {
+    background: #fafafa;
+    border: 1px solid #e0e0e0;
+    border-radius: 10px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .order-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+
+  .order-card-id {
+    font-weight: 700;
+    color: #333;
+    font-size: 0.95rem;
+  }
+
+  .order-card-customer {
+    font-size: 0.8rem;
+    color: #777;
+    margin-top: 2px;
+  }
+
+  .order-card-date {
+    font-size: 0.8rem;
+    color: #999;
+  }
+
+  .order-card-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.88rem;
+    color: #555;
+  }
+
+  .order-card-row label {
+    font-weight: 600;
+    color: #444;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+  }
+
+  .order-card-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 4px;
+  }
+
+  .order-card-actions .status-select {
+    flex: 1;
+    min-width: 120px;
+    padding: 6px 10px;
+    font-size: 0.82rem;
+  }
+
+  .order-card-chat-btn {
+    background: #2E7D32;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 6px 14px;
+    cursor: pointer;
+    font-size: 0.82rem;
+    white-space: nowrap;
+  }
+}

@@ -161,7 +161,7 @@ const OrderTracking = () => {
           <div className="info-row"><span>Payment</span><span>{trackingData.payment_method?.toUpperCase()} — {trackingData.payment_status}</span></div>
           <div className="info-row"><span>Total</span><span>Rs {Math.round(trackingData.total_amount)}</span></div>
           {trackingData.shipping_address && (
-            <div className="info-row"><span>Ship To</span><span>{trackingData.shipping_address}</span></div>
+            <div className="info-row"><span>Deliver To</span><span>{trackingData.shipping_address}</span></div>
           )}
           <div className="info-row"><span>Ordered On</span><span>{formatDate(trackingData.created_at)}</span></div>
         </div>

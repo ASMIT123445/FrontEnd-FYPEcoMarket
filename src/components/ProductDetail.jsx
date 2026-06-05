@@ -55,6 +55,15 @@ const ProductDetail = () => {
     const fetchProduct = async () => {
       try {
         setLoading(true);
+
+        // Reset rating state for the new product
+        setUserRating(0);
+        setReviewText('');
+        setHasRated(false);
+        setUserReviews([]);
+        setAverageRating(0);
+        setRatingCount(0);
+
         const response = await axiosInstance.get(`/products/${id}/`);
         setProduct(response.data);
         setError(null);
@@ -79,34 +88,6 @@ const ProductDetail = () => {
       fetchProduct();
     }
   }, [id]);
-
-  // Sample reviews data (in real app, this would also come from API)
-  const reviews = [
-    {
-      id: 1,
-      name: "Sarah Miller",
-      avatar: "SM",
-      date: "November 15, 2026",
-      rating: 5,
-      content: "Excellent product! Great quality and eco-friendly. Highly recommended!"
-    },
-    {
-      id: 2,
-      name: "Ethan Johnson",
-      avatar: "EJ",
-      date: "November 8, 2026",
-      rating: 4.5,
-      content: "Good quality product. Fast delivery and great customer service."
-    },
-    {
-      id: 3,
-      name: "Alex Morgan",
-      avatar: "AM",
-      date: "October 25, 2026",
-      rating: 4,
-      content: "Decent product. Love the eco-friendly aspect. Will buy again."
-    }
-  ];
 
   // Fetch ratings
   const fetchRatings = async () => {
@@ -450,10 +431,15 @@ const ProductDetail = () => {
             <h1 className="product-title">{product.name}</h1>
 
             {/* Seller */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '14px', color: '#555', fontSize: '0.88rem' }}>
-              <span style={{ background: '#f5f5f5', padding: '4px 12px', borderRadius: '20px', fontWeight: 600 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '14px', flexWrap: 'wrap' }}>
+              <span style={{ background: '#f5f5f5', padding: '5px 14px', borderRadius: '20px', fontWeight: 700, fontSize: '0.82rem', color: '#444', border: '1px solid #e0e0e0' }}>
                 🏪 {product.seller_name || 'Ecomarket Seller'}
               </span>
+              {product.is_validated && (
+                <span style={{ background: '#e8f5e9', padding: '5px 12px', borderRadius: '20px', fontWeight: 700, fontSize: '0.78rem', color: '#2E7D32', border: '1px solid #c8e6c9' }}>
+                  ✓ Verified
+                </span>
+              )}
             </div>
             
             <div className="rating">
@@ -491,6 +477,24 @@ const ProductDetail = () => {
               <li><FaTruck /> Fast and secure delivery</li>
             </ul>
             
+            {/* Trust strip */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '18px' }}>
+              {[
+                { icon: '🚚', label: 'Free delivery', sub: 'On orders over Rs 700' },
+                { icon: '💬', label: 'Chat with seller', sub: 'Ask questions directly' },
+                { icon: '🔒', label: 'Secure payment', sub: 'eSewa & Khalti' },
+                { icon: '🌿', label: 'Eco certified', sub: 'Verified sustainable' },
+              ].map(({ icon, label, sub }) => (
+                <div key={label} style={{ display: 'flex', alignItems: 'center', gap: '10px', background: '#fafafa', border: '1px solid #eee', borderRadius: '10px', padding: '10px 12px' }}>
+                  <span style={{ fontSize: '1.2rem' }}>{icon}</span>
+                  <div>
+                    <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#1a1a2e' }}>{label}</div>
+                    <div style={{ fontSize: '0.7rem', color: '#888' }}>{sub}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
             {/* Add to Cart Section */}
             <div className="cart-controls">
               {product.is_validated ? (
@@ -597,8 +601,10 @@ const ProductDetail = () => {
           </div>
           
           <div className="reviews-container">
-            {userReviews.length > 0 ? (
-              userReviews.map((review) => (
+            {userReviews.filter(r => r.review && r.review.trim()).length > 0 ? (
+              userReviews
+                .filter(r => r.review && r.review.trim())
+                .map((review) => (
                 <div key={review.id} className="review">
                   <div className="review-header">
                     <div className="reviewer">
@@ -614,15 +620,16 @@ const ProductDetail = () => {
                         </div>
                       </div>
                     </div>
-                    <div className="review-stars">
-                      {renderStars(review.rating)}
-                    </div>
+                    {/* Stars only shown if they also left a rating */}
+                    {review.rating > 0 && (
+                      <div className="review-stars">
+                        {renderStars(review.rating)}
+                      </div>
+                    )}
                   </div>
-                  {review.review && (
-                    <div className="review-content">
-                      <p>{review.review}</p>
-                    </div>
-                  )}
+                  <div className="review-content">
+                    <p>{review.review}</p>
+                  </div>
                 </div>
               ))
             ) : (

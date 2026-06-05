@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { FaHome, FaChevronRight, FaHeart, FaShoppingCart, FaTrash, FaStar } from 'react-icons/fa';
 import { wishlistService } from '../services/wishlistService';
 import { cartService } from '../services/cartService';
+import axiosInstance from '../services/axiosInstance';
 import { getImageUrl, handleImageError } from '../utils/imageHelper';
 import Header from './Header';
 import '../styles/Wishlist.css';
@@ -15,12 +16,40 @@ const Wishlist = () => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const loadWishlist = () => {
+        const loadWishlist = async () => {
             try {
-                const items = wishlistService.getWishlist();
-                setWishlistItems(items);
+                const saved = wishlistService.getWishlist();
+                if (saved.length === 0) { setWishlistItems([]); setLoading(false); return; }
+
+                // Fetch fresh product data for all wishlisted IDs
+                const ids = saved.map(i => i.id);
+                const results = await Promise.allSettled(
+                    ids.map(id => axiosInstance.get(`/products/${id}/`))
+                );
+
+                const fresh = results.map((res, idx) => {
+                    if (res.status === 'fulfilled') {
+                        const p = res.value.data;
+                        return {
+                            id: p.id,
+                            name: p.name,
+                            price: p.price,
+                            image: p.image_url || p.image,
+                            image_url: p.image_url,
+                            category: p.category_display || p.eco_category_detail?.name || p.category || '—',
+                            seller: p.seller_name || '—',
+                            rating: p.rating || 0,
+                            rating_count: p.rating_count || 0,
+                        };
+                    }
+                    // product may have been deleted — keep saved snapshot
+                    return saved[idx];
+                });
+
+                setWishlistItems(fresh);
             } catch (error) {
                 console.error('Error loading wishlist:', error);
+                setWishlistItems(wishlistService.getWishlist());
             } finally {
                 setLoading(false);
             }
@@ -185,19 +214,20 @@ const Wishlist = () => {
                                     
                                     <div className="item-rating">
                                         <div className="stars">
-                                            {renderStars(item.eco_rating || 4.5)}
+                                            {renderStars(item.rating || 0)}
                                         </div>
-                                        <span className="rating-text">({item.reviews || 100} reviews)</span>
+                                        <span className="rating-text">
+                                            {item.rating > 0
+                                                ? `${item.rating.toFixed(1)} ★ (${item.rating_count || 0} reviews)`
+                                                : 'No ratings yet'}
+                                        </span>
                                     </div>
                                     
                                     <div className="item-price">
                                         <span className="current-price">Rs {Math.round(item.price)}</span>
-                                        {item.oldPrice && (
-                                            <span className="old-price">Rs {Math.round(item.oldPrice)}</span>
-                                        )}
                                     </div>
                                     
-                                    <div className="item-seller">by {item.seller}</div>
+                                    <div className="item-seller">by {item.seller || '—'}</div>
                                     
                                     <div className="item-actions">
                                         <button 

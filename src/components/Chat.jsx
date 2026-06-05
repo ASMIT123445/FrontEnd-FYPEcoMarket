@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { FaArrowLeft, FaPaperPlane, FaComments } from 'react-icons/fa';
+import { FaArrowLeft, FaPaperPlane, FaComments, FaImage, FaTimes } from 'react-icons/fa';
 import axiosInstance from '../services/axiosInstance';
 import Header from './Header';
 import { getUserFromToken } from '../utils/auth';
@@ -11,10 +11,13 @@ const Chat = () => {
   const [room, setRoom] = useState(null);
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
+  const [imageFile, setImageFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState('');
   const messagesEndRef = useRef(null);
+  const fileInputRef = useRef(null);
   const currentUser = getUserFromToken();
 
   const fetchChat = async () => {
@@ -40,14 +43,36 @@ const Chat = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  const handleImageSelect = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setImageFile(file);
+    setImagePreview(URL.createObjectURL(file));
+  };
+
+  const clearImage = () => {
+    setImageFile(null);
+    setImagePreview(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
   const sendMessage = async (e) => {
     e.preventDefault();
-    if (!input.trim()) return;
+    if (!input.trim() && !imageFile) return;
     setSending(true);
     try {
-      const res = await axiosInstance.post(`/chat/${orderId}/${sellerId}/send/`, { content: input.trim() });
+      const form = new FormData();
+      if (input.trim()) form.append('content', input.trim());
+      if (imageFile) form.append('image', imageFile);
+
+      const res = await axiosInstance.post(
+        `/chat/${orderId}/${sellerId}/send/`,
+        form,
+        { headers: { 'Content-Type': 'multipart/form-data' } }
+      );
       setMessages(prev => [...prev, res.data]);
       setInput('');
+      clearImage();
     } catch (err) {
       setError('Failed to send message');
     } finally {
@@ -61,7 +86,7 @@ const Chat = () => {
     </div>
   );
 
-  if (error) return (
+  if (error && !messages.length) return (
     <div style={styles.page}><Header showBackButton={false} />
       <div style={styles.center}>
         <p style={{ color: '#e53935' }}>{error}</p>
@@ -101,7 +126,15 @@ const Chat = () => {
                 <div style={{ maxWidth: '70%' }}>
                   {!isMine && <p style={styles.senderName}>{msg.sender_name}</p>}
                   <div style={{ ...styles.bubble, ...(isMine ? styles.myBubble : styles.theirBubble) }}>
-                    {msg.content}
+                    {msg.image_url && (
+                      <img
+                        src={msg.image_url}
+                        alt="attachment"
+                        style={styles.msgImage}
+                        onClick={() => window.open(msg.image_url, '_blank')}
+                      />
+                    )}
+                    {msg.content && <span>{msg.content}</span>}
                   </div>
                   <p style={{ ...styles.time, textAlign: isMine ? 'right' : 'left' }}>
                     {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -113,7 +146,34 @@ const Chat = () => {
           <div ref={messagesEndRef} />
         </div>
 
+        {/* Image preview strip */}
+        {imagePreview && (
+          <div style={styles.previewStrip}>
+            <div style={styles.previewThumb}>
+              <img src={imagePreview} alt="preview" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '6px' }} />
+              <button style={styles.removePreview} onClick={clearImage}><FaTimes /></button>
+            </div>
+          </div>
+        )}
+
         <form onSubmit={sendMessage} style={styles.inputRow}>
+          {/* Hidden file input */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            style={{ display: 'none' }}
+            onChange={handleImageSelect}
+          />
+          {/* Image attach button */}
+          <button
+            type="button"
+            style={styles.attachBtn}
+            onClick={() => fileInputRef.current?.click()}
+            title="Attach image"
+          >
+            <FaImage />
+          </button>
           <input
             style={styles.input}
             value={input}
@@ -121,7 +181,7 @@ const Chat = () => {
             placeholder="Type a message..."
             disabled={sending}
           />
-          <button type="submit" style={styles.sendBtn} disabled={sending || !input.trim()}>
+          <button type="submit" style={styles.sendBtn} disabled={sending || (!input.trim() && !imageFile)}>
             <FaPaperPlane />
           </button>
         </form>
@@ -140,11 +200,16 @@ const styles = {
   messagesBox: { flex: 1, overflowY: 'auto', padding: '20px' },
   emptyChat: { display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#aaa', gap: '10px' },
   senderName: { fontSize: '0.75rem', color: '#888', margin: '0 0 3px 4px' },
-  bubble: { padding: '10px 14px', borderRadius: '12px', fontSize: '0.95rem', lineHeight: 1.5 },
+  bubble: { padding: '10px 14px', borderRadius: '12px', fontSize: '0.95rem', lineHeight: 1.5, display: 'flex', flexDirection: 'column', gap: '6px' },
   myBubble: { background: '#2E7D32', color: 'white', borderBottomRightRadius: '4px' },
   theirBubble: { background: '#f0f0f0', color: '#333', borderBottomLeftRadius: '4px' },
+  msgImage: { maxWidth: '220px', maxHeight: '200px', borderRadius: '8px', cursor: 'pointer', display: 'block' },
   time: { fontSize: '0.72rem', color: '#aaa', margin: '3px 4px 0' },
-  inputRow: { display: 'flex', gap: '10px', padding: '16px 20px', borderTop: '1px solid #e0e0e0' },
+  previewStrip: { padding: '8px 20px', borderTop: '1px solid #f0f0f0', background: '#fafafa' },
+  previewThumb: { position: 'relative', width: '60px', height: '60px', display: 'inline-block' },
+  removePreview: { position: 'absolute', top: -6, right: -6, background: '#e53935', color: 'white', border: 'none', borderRadius: '50%', width: '18px', height: '18px', cursor: 'pointer', fontSize: '0.6rem', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 },
+  inputRow: { display: 'flex', gap: '8px', padding: '12px 16px', borderTop: '1px solid #e0e0e0', alignItems: 'center' },
+  attachBtn: { background: '#f0f0f0', border: 'none', borderRadius: '10px', padding: '10px 12px', cursor: 'pointer', color: '#555', fontSize: '1rem', display: 'flex', alignItems: 'center' },
   input: { flex: 1, padding: '12px 16px', border: '2px solid #e0e0e0', borderRadius: '10px', fontSize: '0.95rem', outline: 'none' },
   sendBtn: { background: '#2E7D32', color: 'white', border: 'none', borderRadius: '10px', padding: '12px 18px', cursor: 'pointer', fontSize: '1rem' },
 };

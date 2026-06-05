@@ -144,3 +144,76 @@
   opacity: 0.6;
   cursor: not-allowed;
 }
+
+/* ── Responsive ─────────────────────────────────────────── */
+@media (max-width: 600px) {
+  .tracking-container {
+    margin: 16px auto;
+    padding: 0 12px 40px;
+  }
+
+  .tracking-container h2 {
+    font-size: 1.3rem;
+  }
+
+  /* Stepper: shrink circles and labels on small screens */
+  .stepper {
+    padding: 16px 8px;
+    gap: 0;
+  }
+
+  .step-circle {
+    width: 34px;
+    height: 34px;
+    font-size: 1rem;
+  }
+
+  .step-item.active .step-circle {
+    font-size: 1.1rem;
+  }
+
+  .step-label {
+    font-size: 0.65rem;
+  }
+
+  /* Info card rows: stack label above value on very narrow screens */
+  .info-row {
+    flex-direction: column;
+    gap: 2px;
+    padding: 10px 0;
+  }
+
+  .info-row span:last-child {
+    text-align: left;
+    max-width: 100%;
+    font-size: 0.9rem;
+  }
+
+  .tracking-info-card,
+  .history-timeline {
+    padding: 16px;
+  }
+
+  .btn-cancel-order {
+    width: 100%;
+    justify-content: center;
+    padding: 12px 20px;
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 400px) {
+  .step-label {
+    font-size: 0.58rem;
+  }
+
+  .step-circle {
+    width: 28px;
+    height: 28px;
+    font-size: 0.85rem;
+  }
+
+  .step-line {
+    top: 14px;
+  }
+}

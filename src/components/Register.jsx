@@ -17,6 +17,7 @@ import {
   FaArrowLeft
 } from "react-icons/fa";
 import { FaGoogle } from "react-icons/fa";
+import { useGoogleLogin } from '@react-oauth/google';
 
 export default function Register() {
   const navigate = useNavigate();
@@ -243,6 +244,30 @@ export default function Register() {
       setLoading(false);
     }
   };
+
+  // Google OAuth handler
+  const handleGoogleSuccess = async (tokenResponse) => {
+    try {
+      setLoading(true);
+      const res = await axios.post('http://127.0.0.1:8000/api/auth/google-login/', {
+        access_token: tokenResponse.access_token,
+      });
+      localStorage.setItem('access', res.data.access);
+      localStorage.setItem('refresh', res.data.refresh);
+      setMessage({ type: 'success', text: 'Signed up with Google! Redirecting...' });
+      setTimeout(() => navigate('/main'), 1200);
+    } catch (err) {
+      console.error('Google sign-up error:', err);
+      setMessage({ type: 'error', text: 'Google sign-up failed. Please try again.' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const googleSignUp = useGoogleLogin({
+    onSuccess: handleGoogleSuccess,
+    onError: () => setMessage({ type: 'error', text: 'Google sign-up was cancelled.' }),
+  });
 
   return (
     <div className="register-page">
@@ -509,9 +534,9 @@ export default function Register() {
 
             {/* Social Login */}
             <div className="social-login">
-              <button type="button" className="btn-social btn-google">
+              <button type="button" className="btn-social btn-google" onClick={() => googleSignUp()}>
                 <FaGoogle />
-                <span>Google</span>
+                <span>Continue with Google</span>
               </button>
             </div>
 

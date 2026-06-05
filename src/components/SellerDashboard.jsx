@@ -5,6 +5,10 @@ import {
     FaClipboardList, FaHome, FaArrowLeft, FaDollarSign,
     FaCheckCircle, FaClock, FaTimes as FaTimesCircle
 } from 'react-icons/fa';
+import {
+    LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
+    XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
+} from 'recharts';
 import Header from './Header';
 import { getUserFromToken } from '../utils/auth';
 import axiosInstance from '../services/axiosInstance';
@@ -79,16 +83,21 @@ const SellerDashboard = () => {
             const ordersRes = await axiosInstance.get('/orders/seller/orders/');
             setOrders(ordersRes.data);
 
-            // Calculate stats
+            // Calculate stats — only count paid/active orders
             const verified = productsRes.data.filter(p => p.is_validated).length;
             const pending = productsRes.data.filter(p => !p.is_validated).length;
-            const revenue = ordersRes.data.reduce((sum, order) => sum + parseFloat(order.total_amount), 0);
+
+            const paidOrders = ordersRes.data.filter(o =>
+                o.payment_status === 'completed' ||
+                (o.payment_method === 'cod' && ['confirmed', 'processing', 'shipped', 'delivered'].includes(o.status))
+            );
+            const revenue = paidOrders.reduce((sum, order) => sum + parseFloat(order.seller_subtotal ?? order.total_amount), 0);
 
             setStats({
                 totalProducts: productsRes.data.length,
                 verifiedProducts: verified,
                 pendingProducts: pending,
-                totalOrders: ordersRes.data.length,
+                totalOrders: paidOrders.length,
                 totalRevenue: revenue
             });
         } catch (error) {
@@ -171,6 +180,51 @@ const SellerDashboard = () => {
             </div>
         );
     }
+
+    // ── Derive chart data from already-loaded products & orders ──
+    // 1. Product status pie
+    const productStatusPie = [
+        { name: 'Verified', value: stats.verifiedProducts },
+        { name: 'Pending',  value: stats.pendingProducts  },
+    ].filter(d => d.value > 0);
+
+    // 2. Order status bar
+    const statusCounts = {};
+    orders.forEach(o => { statusCounts[o.status] = (statusCounts[o.status] || 0) + 1; });
+    const orderStatusBar = Object.entries(statusCounts).map(([status, count]) => ({ status, count }));
+
+    // 3. Monthly revenue line (last 6 months from orders)
+    const now = new Date();
+    const monthMap = {};
+    for (let i = 5; i >= 0; i--) {
+        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const key = d.toLocaleString('default', { month: 'short', year: '2-digit' });
+        monthMap[key] = 0;
+    }
+    orders.forEach(o => {
+        const isPaid = o.payment_status === 'completed' ||
+            (o.payment_method === 'cod' && ['confirmed','processing','shipped','delivered'].includes(o.status));
+        if (!isPaid) return;
+        const d = new Date(o.created_at);
+        const key = d.toLocaleString('default', { month: 'short', year: '2-digit' });
+        if (key in monthMap) monthMap[key] += parseFloat(o.seller_subtotal ?? o.total_amount);
+    });
+    const revenueData = Object.entries(monthMap).map(([month, revenue]) => ({ month, revenue: Math.round(revenue) }));
+
+    // 4. Top 5 products by stock (as a proxy for inventory focus)
+    const topByStock = [...products]
+        .sort((a, b) => b.stock - a.stock)
+        .slice(0, 5)
+        .map(p => ({ name: p.name.length > 16 ? p.name.slice(0, 16) + '…' : p.name, stock: p.stock }));
+
+    const PIE_COLORS = ['#2E7D32', '#FF9800'];
+    const BAR_STATUS_COLORS = { pending:'#FF9800', confirmed:'#2196F3', processing:'#9C27B0', shipped:'#00BCD4', delivered:'#4CAF50', cancelled:'#f44336' };
+
+    const chartBoxStyle = {
+        background: 'white', borderRadius: '12px', padding: '20px 24px',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.07)', flex: 1, minWidth: 0,
+    };
+    const chartTitleStyle = { color: '#1B5E20', fontSize: '1rem', fontWeight: 700, marginBottom: '14px', marginTop: 0 };
 
     return (
         <div className="seller-dashboard">
@@ -294,6 +348,78 @@ const SellerDashboard = () => {
                                 </div>
                             </div>
 
+                            {/* ── 4 Charts ── */}
+                            <div style={{ marginTop: '28px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+
+                                {/* Row 1: Revenue line + Order status bar */}
+                                <div style={{ display: 'flex', gap: '20px' }}>
+                                    <div style={chartBoxStyle}>
+                                        <h3 style={chartTitleStyle}>📈 Monthly Revenue (Rs)</h3>
+                                        <ResponsiveContainer width="100%" height={220}>
+                                            <LineChart data={revenueData} margin={{ top: 5, right: 16, left: 0, bottom: 5 }}>
+                                                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                                                <XAxis dataKey="month" tick={{ fontSize: 11 }} />
+                                                <YAxis tick={{ fontSize: 11 }} tickFormatter={v => `Rs ${v}`} width={70} />
+                                                <Tooltip formatter={v => [`Rs ${v}`, 'Revenue']} />
+                                                <Line type="monotone" dataKey="revenue" stroke="#2E7D32" strokeWidth={2.5}
+                                                    dot={{ fill: '#2E7D32', r: 4 }} activeDot={{ r: 6 }} />
+                                            </LineChart>
+                                        </ResponsiveContainer>
+                                    </div>
+
+                                    <div style={chartBoxStyle}>
+                                        <h3 style={chartTitleStyle}>🛒 Orders by Status</h3>
+                                        <ResponsiveContainer width="100%" height={220}>
+                                            <BarChart data={orderStatusBar} margin={{ top: 5, right: 16, left: 0, bottom: 5 }}>
+                                                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                                                <XAxis dataKey="status" tick={{ fontSize: 11 }} />
+                                                <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
+                                                <Tooltip />
+                                                <Bar dataKey="count" radius={[4, 4, 0, 0]}>
+                                                    {orderStatusBar.map((entry, i) => (
+                                                        <Cell key={i} fill={BAR_STATUS_COLORS[entry.status] || '#90A4AE'} />
+                                                    ))}
+                                                </Bar>
+                                            </BarChart>
+                                        </ResponsiveContainer>
+                                    </div>
+                                </div>
+
+                                {/* Row 2: Product status pie + Top products by stock */}
+                                <div style={{ display: 'flex', gap: '20px' }}>
+                                    <div style={chartBoxStyle}>
+                                        <h3 style={chartTitleStyle}>📦 Product Verification Status</h3>
+                                        <ResponsiveContainer width="100%" height={220}>
+                                            <PieChart>
+                                                <Pie data={productStatusPie} cx="50%" cy="50%" outerRadius={80}
+                                                    dataKey="value" label={({ name, value }) => `${name}: ${value}`} labelLine>
+                                                    {productStatusPie.map((_, i) => (
+                                                        <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
+                                                    ))}
+                                                </Pie>
+                                                <Tooltip />
+                                                <Legend />
+                                            </PieChart>
+                                        </ResponsiveContainer>
+                                    </div>
+
+                                    <div style={chartBoxStyle}>
+                                        <h3 style={chartTitleStyle}>📊 Top Products by Stock</h3>
+                                        <ResponsiveContainer width="100%" height={220}>
+                                            <BarChart data={topByStock} layout="vertical"
+                                                margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+                                                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                                                <XAxis type="number" tick={{ fontSize: 11 }} allowDecimals={false} />
+                                                <YAxis type="category" dataKey="name" tick={{ fontSize: 11 }} width={110} />
+                                                <Tooltip />
+                                                <Bar dataKey="stock" fill="#43A047" radius={[0, 4, 4, 0]} />
+                                            </BarChart>
+                                        </ResponsiveContainer>
+                                    </div>
+                                </div>
+
+                            </div>
+
                             <div className="recent-activity">
                                 <h2>Recent Products</h2>
                                 {products.length === 0 ? (
@@ -410,13 +536,14 @@ const SellerDashboard = () => {
                                 </div>
                             ) : (
                                 <div className="orders-table">
+                                    {/* Desktop table */}
                                     <table>
                                         <thead>
                                             <tr>
                                                 <th>Order ID</th>
                                                 <th>Date</th>
                                                 <th>Items</th>
-                                                <th>Total</th>
+                                                <th>Your Total</th>
                                                 <th>Order Status</th>
                                                 <th>Payment Status</th>
                                                 <th>Chat</th>
@@ -431,7 +558,7 @@ const SellerDashboard = () => {
                                                     </td>
                                                     <td>{new Date(order.created_at).toLocaleDateString()}</td>
                                                     <td>{order.items?.length || 0} items</td>
-                                                    <td>Rs {Math.round(order.total_amount)}</td>
+                                                    <td>Rs {Math.round(order.seller_subtotal ?? order.total_amount)}</td>
                                                     <td>
                                                         <select
                                                             value={order.status}
@@ -470,6 +597,65 @@ const SellerDashboard = () => {
                                             ))}
                                         </tbody>
                                     </table>
+
+                                    {/* Mobile card layout */}
+                                    <div className="order-card-mobile">
+                                        {orders.map(order => (
+                                            <div key={order.id} className="order-card">
+                                                <div className="order-card-header">
+                                                    <div>
+                                                        <div className="order-card-id">#{order.id}</div>
+                                                        <div className="order-card-customer">{order.customer_name}</div>
+                                                    </div>
+                                                    <div className="order-card-date">{new Date(order.created_at).toLocaleDateString()}</div>
+                                                </div>
+                                                <div className="order-card-row">
+                                                    <label>Items</label>
+                                                    <span>{order.items?.length || 0} items</span>
+                                                </div>
+                                                <div className="order-card-row">
+                                                    <label>Your Total</label>
+                                                    <span>Rs {Math.round(order.seller_subtotal ?? order.total_amount)}</span>
+                                                </div>
+                                                <div className="order-card-row">
+                                                    <label>Order Status</label>
+                                                    <select
+                                                        value={order.status}
+                                                        onChange={(e) => handleUpdateOrderStatus(order.id, e.target.value)}
+                                                        className={`status-select ${order.status}`}
+                                                    >
+                                                        <option value="pending">Pending</option>
+                                                        <option value="confirmed">Confirmed</option>
+                                                        <option value="processing">Processing</option>
+                                                        <option value="shipped">Shipped</option>
+                                                        <option value="delivered">Delivered</option>
+                                                        <option value="cancelled">Cancelled</option>
+                                                    </select>
+                                                </div>
+                                                <div className="order-card-row">
+                                                    <label>Payment</label>
+                                                    <select
+                                                        value={order.payment_status}
+                                                        onChange={(e) => handleUpdatePaymentStatus(order.id, e.target.value)}
+                                                        className={`status-select ${order.payment_status}`}
+                                                    >
+                                                        <option value="pending">Pending</option>
+                                                        <option value="cash_payment">Cash Payment</option>
+                                                        <option value="completed">Completed</option>
+                                                        <option value="failed">Failed</option>
+                                                    </select>
+                                                </div>
+                                                <div className="order-card-actions">
+                                                    <button
+                                                        className="order-card-chat-btn"
+                                                        onClick={() => setActiveChat(activeChat?.orderId === order.id ? null : { orderId: order.id, buyerName: order.customer_name || `Order #${order.id}` })}
+                                                    >
+                                                        💬 {activeChat?.orderId === order.id ? 'Close Chat' : 'Chat'}
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
                                 </div>
                             )}
                         </div>

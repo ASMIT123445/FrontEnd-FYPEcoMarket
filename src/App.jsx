@@ -24,6 +24,7 @@ import OrderTracking from "./components/OrderTracking";
 import Chat from "./components/Chat";
 import AdminDashboard from "./components/AdminDashboard";
 import AdminLogin from "./components/AdminLogin";
+import Leaderboard from "./components/Leaderboard";
 
 function App() {
   return (
@@ -131,6 +132,12 @@ function App() {
         <Route path="/admin-dashboard" element={
           <ProtectedRoute>
             <AdminDashboard />
+          </ProtectedRoute>
+        } />
+
+        <Route path="/leaderboard" element={
+          <ProtectedRoute>
+            <Leaderboard />
           </ProtectedRoute>
         } />
 
