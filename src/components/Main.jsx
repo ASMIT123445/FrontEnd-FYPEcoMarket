@@ -274,6 +274,7 @@ export default function Main() {
         }
     };
 
+    
     useEffect(() => {
         if (user?.role === 'seller' && showSellerPanel) {
             if (sellerTab === 'products') {
