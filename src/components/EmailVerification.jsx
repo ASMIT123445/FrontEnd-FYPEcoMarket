@@ -21,6 +21,7 @@ export default function EmailVerification() {
       return;
     }
 
+    
     setLoading(true);
     setError("");
 

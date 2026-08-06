@@ -13,6 +13,7 @@ export const cartService = {
     }
   },
 
+  
   // Add item to cart
   async addToCart(productId, quantity = 1) {
     try {
