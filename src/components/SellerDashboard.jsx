@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import API_BASE_URL from "../config"; 
+import { 
+    FaBox, FaPlus, FaEdit, FaTrash, FaEye, FaChartLine,
     FaClipboardList, FaHome, FaArrowLeft, FaDollarSign,
     FaCheckCircle, FaClock, FaTimes as FaTimesCircle
 } from 'react-icons/fa';
+import API_BASE_URL from "../config";
 import {
     LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
     XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
