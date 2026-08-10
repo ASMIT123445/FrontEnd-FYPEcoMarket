@@ -1,3 +1,5 @@
+import API_BASE_URL from "../config";
+
 /**
  * Get the full image URL for a product
  * Handles both absolute URLs and relative paths
@@ -17,12 +19,12 @@ export const getImageUrl = (imageUrl, fallbackImage = null) => {
     
     // If it's a relative path, prepend the backend URL
     if (image && image.startsWith('/media/')) {
-        return `http://127.0.0.1:8000${image}`;
+        return `${API_BASE_URL}${image}`;
     }
     
     // If it starts with 'media/', add the leading slash and backend URL
     if (image && image.startsWith('media/')) {
-        return `http://127.0.0.1:8000/${image}`;
+        return `${API_BASE_URL}/${image}`;
     }
     
     // Default fallback

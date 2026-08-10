@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import axios from "axios";
+import API_BASE_URL from "../config";
 import { 
   FaLock, 
   FaEye, 
@@ -99,7 +100,7 @@ export default function ResetPassword() {
     setLoading(true);
 
     try {
-      const response = await axios.post("http://127.0.0.1:8000/api/auth/reset-password/", {
+      const response = await axios.post(`${API_BASE_URL}/api/auth/reset-password/`, {
         uid: uid,
         token: token,
         password: password,

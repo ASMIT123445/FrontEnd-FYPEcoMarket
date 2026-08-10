@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-    FaBox, FaPlus, FaEdit, FaTrash, FaEye, FaChartLine, 
+import API_BASE_URL from "../config"; 
     FaClipboardList, FaHome, FaArrowLeft, FaDollarSign,
     FaCheckCircle, FaClock, FaTimes as FaTimesCircle
 } from 'react-icons/fa';
@@ -44,7 +43,7 @@ const SellerDashboard = () => {
             
             // Fetch full profile to get role
             try {
-                const response = await fetch('http://127.0.0.1:8000/api/profile/', {
+                const response = await fetch(`${API_BASE_URL}/api/profile/`, {
                     headers: {
                         'Authorization': `Bearer ${localStorage.getItem('access')}`,
                         'Content-Type': 'application/json'
@@ -132,7 +131,7 @@ const SellerDashboard = () => {
 
     const handleUpdateOrderStatus = async (orderId, newStatus) => {
         try {
-            const res = await fetch(`http://127.0.0.1:8000/api/orders/${orderId}/status/`, {
+            const res = await fetch(`${API_BASE_URL}/api/orders/${orderId}/status/`, {
                 method: 'PATCH',
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('access')}`,
@@ -152,7 +151,7 @@ const SellerDashboard = () => {
 
     const handleUpdatePaymentStatus = async (orderId, newPaymentStatus) => {
         try {
-            const res = await fetch(`http://127.0.0.1:8000/api/orders/${orderId}/payment-status/`, {
+            const res = await fetch(`${API_BASE_URL}/api/orders/${orderId}/payment-status/`, {
                 method: 'PATCH',
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('access')}`,

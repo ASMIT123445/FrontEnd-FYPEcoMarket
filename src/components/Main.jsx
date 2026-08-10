@@ -59,6 +59,7 @@ import "../styles/Home.css";
 import { showToast, showConfirm } from './Toast';
 import SortDropdown from './SortDropdown';
 import { SearchBox } from './Header';
+import API_BASE_URL from "../config";
 
 export default function Main() {
     const navigate = useNavigate();
@@ -226,7 +227,7 @@ export default function Main() {
                 return;
             }
 
-            const response = await fetch('http://127.0.0.1:8000/api/profile/', {
+            const response = await fetch(`${API_BASE_URL}/api/profile/`, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'
@@ -253,7 +254,7 @@ export default function Main() {
     };
 
     useEffect(() => {
-        const fetchProducts = async () => {
+        const fetchProducts = async (retryCount = 0) => {
             try {
                 let url = '/products/';
                 const params = new URLSearchParams();
@@ -305,6 +306,12 @@ export default function Main() {
                 setTopSellerProducts(topSellers);
             } catch (error) {
                 console.error('Error fetching products:', error);
+                // Retry once on timeout (Neon cold start)
+                if (retryCount === 0 && error.code === 'ECONNABORTED') {
+                    console.log('Retrying after timeout...');
+                    setTimeout(() => fetchProducts(1), 2000);
+                    return;
+                }
                 // Fallback to empty arrays when API fails
                 setProducts([]);
                 setRecommendedProducts([]);

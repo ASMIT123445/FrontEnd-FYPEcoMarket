@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
+import API_BASE_URL from "../config";
 import { FaLeaf, FaSpinner } from "react-icons/fa";
 import { showToast } from './Toast';
 
@@ -26,7 +27,7 @@ export default function EmailVerification() {
     setError("");
 
     try {
-      const response = await axios.post("http://127.0.0.1:8000/api/verify-email/", {
+      const response = await axios.post(`${API_BASE_URL}/api/verify-email/`, {
         email: email,
         code: verificationCode
       });

@@ -1,5 +1,7 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { useEffect } from "react";
 import { ToastContainer, ConfirmDialog } from "./components/Toast";
+import axiosInstance from "./services/axiosInstance";
 
 import LandingPage from "./components/LandingPage";
 import Home from "./components/Home";
@@ -27,6 +29,14 @@ import AdminLogin from "./components/AdminLogin";
 import Leaderboard from "./components/Leaderboard";
 
 function App() {
+  // Keep Neon DB awake by pinging every 4 minutes
+  useEffect(() => {
+    const ping = () => axiosInstance.get('/ping/').catch(() => {});
+    ping(); // ping immediately on load
+    const interval = setInterval(ping, 4 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, []);
+
   return (
     <BrowserRouter>
       <ToastContainer />

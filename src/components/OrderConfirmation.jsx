@@ -9,8 +9,7 @@ import { getUserFromToken } from '../utils/auth';
 import { getImageUrl, handleImageError } from '../utils/imageHelper';
 import '../styles/ShoppingCart.css';
 import Footer from './Footer';
-
-const OrderConfirmation = () => {
+import API_BASE_URL from "../config"; = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const [searchParams] = useSearchParams();
@@ -36,7 +35,7 @@ const OrderConfirmation = () => {
                 }
                 // Fetch the order from the API
                 try {
-                    const res = await fetch(`http://127.0.0.1:8000/api/orders/${orderId}/track/`, {
+                const res = await fetch(`${API_BASE_URL}/api/orders/${orderId}/track/`, {
                         headers: {
                             'Authorization': `Bearer ${localStorage.getItem('access')}`,
                             'Content-Type': 'application/json',

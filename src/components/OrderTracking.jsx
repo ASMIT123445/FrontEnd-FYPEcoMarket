@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import API_BASE_URL from "../config";
 import { FaArrowLeft, FaCheckCircle, FaClock, FaTimesCircle, FaBan, FaCheck  } from 'react-icons/fa';
 import { TbTruckDelivery } from "react-icons/tb";
 
@@ -34,7 +35,7 @@ const OrderTracking = () => {
   useEffect(() => {
     const fetchTracking = async () => {
       try {
-        const res = await fetch(`http://127.0.0.1:8000/api/orders/${orderId}/track/`, {
+        const res = await fetch(`${API_BASE_URL}/api/orders/${orderId}/track/`, {
           headers: { 'Authorization': `Bearer ${localStorage.getItem('access')}` }
         });
         if (!res.ok) throw new Error('Order not found');
@@ -43,7 +44,7 @@ const OrderTracking = () => {
 
         // Fetch sellers for this order
         try {
-          const sellersRes = await fetch(`http://127.0.0.1:8000/api/chat/${orderId}/sellers/`, {
+      const sellersRes = await fetch(`${API_BASE_URL}/api/chat/${orderId}/sellers/`, {
             headers: { 'Authorization': `Bearer ${localStorage.getItem('access')}` }
           });
           if (sellersRes.ok) setSellers(await sellersRes.json());
@@ -61,7 +62,7 @@ const OrderTracking = () => {
     showConfirm('Are you sure you want to cancel this order?', async () => {
       setCancelling(true);
       try {
-        const res = await fetch(`http://127.0.0.1:8000/api/orders/${orderId}/cancel/`, {
+        const res = await fetch(`${API_BASE_URL}/api/orders/${orderId}/cancel/`, {
           method: 'PATCH',
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('access')}`,

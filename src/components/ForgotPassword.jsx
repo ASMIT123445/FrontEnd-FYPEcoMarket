@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
+import API_BASE_URL from "../config";
 import {
   FaUser, FaEnvelope, FaLock, FaEye, FaEyeSlash,
   FaSpinner, FaCheckCircle, FaExclamationCircle,
@@ -48,7 +49,7 @@ export default function ForgotPassword() {
     }
     setLoading(true);
     try {
-      await axios.post("http://127.0.0.1:8000/api/auth/forgot-password/otp/", {
+      await axios.post(`${API_BASE_URL}/api/auth/forgot-password/otp/`, {
         username, email,
       });
       setSuccess(`OTP sent to ${email}. Check your inbox.`);
@@ -72,7 +73,7 @@ export default function ForgotPassword() {
 
     setLoading(true);
     try {
-      await axios.post("http://127.0.0.1:8000/api/auth/reset-password/otp/", {
+      await axios.post(`${API_BASE_URL}/api/auth/reset-password/otp/`, {
         username, email, otp, password, password2,
       });
       setSuccess("Password reset successful! Redirecting to login...");

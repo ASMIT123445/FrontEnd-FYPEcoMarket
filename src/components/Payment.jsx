@@ -31,6 +31,7 @@ import '../styles/Header.css';
 import TermsModal from './TermsModal';
 import { showToast } from './Toast';
 import khaltiLogo from '../assets/khalti png.png';
+import API_BASE_URL from "../config";
 const Payment = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
@@ -85,7 +86,7 @@ const Payment = () => {
       if (userInfo) {
         try {
           // Cancel any pending gateway orders from a previous abandoned session
-          await fetch('http://127.0.0.1:8000/api/orders/gateway/cancel-pending/', {
+          await fetch(`${API_BASE_URL}/api/orders/gateway/cancel-pending/`, {
             method: 'POST',
             headers: {
               'Authorization': `Bearer ${localStorage.getItem('access')}`,
@@ -94,7 +95,7 @@ const Payment = () => {
           });
 
           // Fetch full profile data including address
-          const profileResponse = await fetch('http://127.0.0.1:8000/api/profile/', {
+          const profileResponse = await fetch(`${API_BASE_URL}/api/profile/`, {
             headers: {
               'Authorization': `Bearer ${localStorage.getItem('access')}`,
               'Content-Type': 'application/json'
@@ -119,7 +120,7 @@ const Payment = () => {
           setCartItems(cartData.items || []);
           
           // Fetch green points
-          const pointsResponse = await fetch('http://127.0.0.1:8000/api/auth/green-points/', {
+          const pointsResponse = await fetch(`${API_BASE_URL}/api/auth/green-points/`, {
             headers: {
               'Authorization': `Bearer ${localStorage.getItem('access')}`,
               'Content-Type': 'application/json'

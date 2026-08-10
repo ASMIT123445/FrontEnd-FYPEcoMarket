@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import API_BASE_URL from "../config";
 import { FaArrowLeft, FaHome, FaChevronRight, FaShoppingCart, FaLeaf, FaMinus, FaPlus, FaTrash, FaLock, FaCheckCircle } from 'react-icons/fa';
 import { getUserFromToken } from '../utils/auth';
 import { cartService } from '../services/cartService';
@@ -54,7 +55,7 @@ const ShoppingCart = () => {
   const fetchOrderHistory = async () => {
     setHistoryLoading(true);
     try {
-      const response = await fetch('http://127.0.0.1:8000/api/orders/history/', {
+      const response = await fetch(`${API_BASE_URL}/api/orders/history/`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('access')}`,
           'Content-Type': 'application/json'

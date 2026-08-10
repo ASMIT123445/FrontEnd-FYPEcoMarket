@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import API_BASE_URL from "../config";
 import {
   FaLeaf, FaHeart, FaShoppingCart, FaChevronDown, FaUser, FaSignOutAlt,
   FaSearch, FaBars, FaTimes, FaTrophy, FaClock
@@ -57,8 +58,8 @@ export function SearchBox({ onSearch, autoFocus = false, initialQuery = '' }) {
   const fetchSuggestions = async (q) => {
     try {
       const url = q.trim()
-        ? `http://127.0.0.1:8000/api/products/suggestions/?q=${encodeURIComponent(q.trim())}`
-        : `http://127.0.0.1:8000/api/products/suggestions/`;
+        ? `${API_BASE_URL}/api/products/suggestions/?q=${encodeURIComponent(q.trim())}`
+        : `${API_BASE_URL}/api/products/suggestions/`;
       const res = await fetch(url);
       if (!res.ok) return;
       const data = await res.json();

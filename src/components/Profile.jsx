@@ -10,6 +10,7 @@ import Header from './Header';
 import { getUserFromToken } from '../utils/auth';
 import axiosInstance from '../services/axiosInstance';
 import Footer from './Footer';
+import API_BASE_URL from "../config";
 
 const C = {
     bg: '#f5f6fa',
@@ -61,7 +62,7 @@ const Profile = () => {
             const userInfo = getUserFromToken();
             if (!userInfo) { navigate('/login'); return; }
             try {
-                const res = await fetch('http://127.0.0.1:8000/api/profile/', {
+                const res = await fetch(`${API_BASE_URL}/api/profile/`, {
                     headers: { 'Authorization': `Bearer ${localStorage.getItem('access')}` }
                 });
                 if (res.ok) {
@@ -143,7 +144,7 @@ const Profile = () => {
     const handleSave = async () => {
         setSaving(true);
         try {
-            const res = await fetch('http://127.0.0.1:8000/api/profile/', {
+            const res = await fetch(`${API_BASE_URL}/api/profile/`, {
                 method: 'PUT',
                 headers: { 'Authorization': `Bearer ${localStorage.getItem('access')}`, 'Content-Type': 'application/json' },
                 body: JSON.stringify(formData)

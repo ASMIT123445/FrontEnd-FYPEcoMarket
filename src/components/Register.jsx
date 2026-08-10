@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import axios from "axios";
+import API_BASE_URL from "../config";
 import { 
   FaUser, 
   FaLock, 
@@ -156,8 +157,8 @@ export default function Register() {
 
     try {
       const endpoint = role === "seller" 
-        ? "http://127.0.0.1:8000/api/seller/register/"
-        : "http://127.0.0.1:8000/api/register/";
+        ? `${API_BASE_URL}/api/seller/register/`
+        : `${API_BASE_URL}/api/register/`;
 
       const payload = {
         username,
@@ -249,7 +250,7 @@ export default function Register() {
   const handleGoogleSuccess = async (tokenResponse) => {
     try {
       setLoading(true);
-      const res = await axios.post('http://127.0.0.1:8000/api/auth/google-login/', {
+      const res = await axios.post(`${API_BASE_URL}/api/auth/google-login/`, {
         access_token: tokenResponse.access_token,
       });
       localStorage.setItem('access', res.data.access);
