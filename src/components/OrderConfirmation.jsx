@@ -9,7 +9,9 @@ import { getUserFromToken } from '../utils/auth';
 import { getImageUrl, handleImageError } from '../utils/imageHelper';
 import '../styles/ShoppingCart.css';
 import Footer from './Footer';
-import API_BASE_URL from "../config"; = () => {
+import API_BASE_URL from "../config";
+
+const OrderConfirmation = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const [searchParams] = useSearchParams();
