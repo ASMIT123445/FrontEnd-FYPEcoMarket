@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
+import API_BASE_URL from "../config";
 
 function ProductList() {
   const [products, setProducts] = useState([]);
 
   useEffect(() => {
     // This is where the Axios example goes
-    axios.get("http://127.0.0.1:8000/api/products/")
+    axios.get(`${API_BASE_URL}/api/products/`)
       .then(res => setProducts(res.data)) // save to state
       .catch(err => console.error(err));
   }, []); // empty dependency = run once when component mounts
