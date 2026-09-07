@@ -573,69 +573,48 @@ const ProductDetail = () => {
 
           
           
-          {/* Rate the Product Section */}
-          <div className="rate-product-box">
-            {canReview ? (
-              <>
-                <span className="rate-label">Rate the product:</span>
-                <div className="interactive-stars">
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <i
-                      key={star}
-                      className={`fas fa-star ${
-                        star <= (hoverRating || userRating) ? 'active' : ''
-                      }`}
-                      onMouseEnter={() => setHoverRating(star)}
-                      onMouseLeave={() => setHoverRating(0)}
-                      onClick={() => handleStarClick(star)}
-                      style={{ cursor: 'pointer' }}
-                    ></i>
-                  ))}
-                  {hasRated && (
-                    <span className="your-rating-text">Your rating: {userRating}★</span>
-                  )}
-                </div>
-              
-                {/* Review Comment Section */}
-                <div className="review-input-section">
-                  <textarea
-                    className="review-textarea"
-                    placeholder="Share your thoughts about this product... (optional)"
-                    value={reviewText}
-                    onChange={(e) => setReviewText(e.target.value)}
-                    rows="3"
-                  />
-                  <button 
-                    className="post-review-btn"
-                    onClick={handlePostReview}
-                    disabled={userRating === 0}
-                  >
-                    <i className="fas fa-paper-plane"></i>
-                    {hasRated ? 'Update Review' : 'Post Review'}
-                  </button>
-                </div>
-              </>
-            ) : (
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '12px',
-                background: '#f5f5f5',
-                border: '1px solid #e0e0e0',
-                borderRadius: '10px',
-                padding: '16px 20px',
-                color: '#757575',
-              }}>
-                <i className="fas fa-lock" style={{ fontSize: '1.2rem', color: '#bdbdbd' }}></i>
-                <div>
-                  <p style={{ margin: 0, fontWeight: 600, color: '#555' }}>Reviews are locked</p>
-                  <p style={{ margin: '4px 0 0', fontSize: '0.85rem' }}>
-                    Only customers who have purchased and received this product can leave a review.
-                  </p>
-                </div>
+          {/* Rate the Product Section — only shown to eligible buyers */}
+          {canReview && (
+            <div className="rate-product-box">
+              <span className="rate-label">Rate the product:</span>
+              <div className="interactive-stars">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <i
+                    key={star}
+                    className={`fas fa-star ${
+                      star <= (hoverRating || userRating) ? 'active' : ''
+                    }`}
+                    onMouseEnter={() => setHoverRating(star)}
+                    onMouseLeave={() => setHoverRating(0)}
+                    onClick={() => handleStarClick(star)}
+                    style={{ cursor: 'pointer' }}
+                  ></i>
+                ))}
+                {hasRated && (
+                  <span className="your-rating-text">Your rating: {userRating}★</span>
+                )}
               </div>
-            )}
-          </div>
+
+              {/* Review Comment Section */}
+              <div className="review-input-section">
+                <textarea
+                  className="review-textarea"
+                  placeholder="Share your thoughts about this product... (optional)"
+                  value={reviewText}
+                  onChange={(e) => setReviewText(e.target.value)}
+                  rows="3"
+                />
+                <button
+                  className="post-review-btn"
+                  onClick={handlePostReview}
+                  disabled={userRating === 0}
+                >
+                  <i className="fas fa-paper-plane"></i>
+                  {hasRated ? 'Update Review' : 'Post Review'}
+                </button>
+              </div>
+            </div>
+          )}
           
           <div className="reviews-container">
             {userReviews.filter(r => r.review && r.review.trim()).length > 0 ? (

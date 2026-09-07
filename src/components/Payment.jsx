@@ -355,6 +355,15 @@ const Payment = () => {
     setOrderLoading(true);
     
     try {
+      // Re-fetch cart count to make sure it's still populated
+      const freshCart = await cartService.getCart();
+      if (!freshCart.items || freshCart.items.length === 0) {
+        showToast('Your cart is empty. Please add items before placing an order.', 'error');
+        setOrderLoading(false);
+        navigate('/main');
+        return;
+      }
+
       const { subtotal, shipping, tax } = calculateTotals();
       const orderData = {
         shipping_address: `${shippingData.address}, ${shippingData.city}, ${shippingData.zipCode}`,
@@ -378,7 +387,15 @@ const Payment = () => {
       
     } catch (error) {
       console.error('Error creating COD order:', error);
-      showToast(error.error || 'Failed to create order. Please try again.', 'error');
+      const isTimeout = error?.code === 'ECONNABORTED' || error?.message?.includes('timeout');
+      const message = isTimeout
+        ? 'The server is waking up (cold start). Please wait a moment and try again.'
+        : error?.error ||
+          error?.detail ||
+          (typeof error === 'string' ? error : null) ||
+          'Failed to create order. Please try again.';
+      console.error('COD error detail:', message);
+      showToast(message, 'error');
     } finally {
       setOrderLoading(false);
     }
